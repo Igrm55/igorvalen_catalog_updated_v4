@@ -1,0 +1,22 @@
+{
+  "name": "igorvalen-fullstack",
+  "version": "1.6.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node scripts/seed.cjs",
+    "db:init": "npm run db:generate && npm run db:push && npm run db:seed",
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.2",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}
