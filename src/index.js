@@ -37,9 +37,10 @@ const upload = multer({
 function normalizeNumber(val){
   if (val===undefined || val===null || val==='') return null
   if (typeof val === 'number') return val
-  // Accept "4,70" or "4.70"
-  const s = String(val).replace('.','').replace(',','.')
-  const f = parseFloat(s)
+  // Accept "4,70" or "4.70". If comma is present, treat dots as thousand separators.
+  const s = String(val).trim()
+  const normalized = s.includes(',') ? s.replace(/\./g,'').replace(',', '.') : s
+  const f = parseFloat(normalized)
   return isNaN(f) ? null : f
 }
 async function getSettings(){
@@ -56,9 +57,9 @@ app.get('/api/catalog', async (req,res)=>{
     if (category) where.category = category
     if (q){
       where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { codes: { contains: q, mode: 'insensitive' } },
-        { category: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { codes: { contains: q } },
+        { category: { contains: q } },
       ]
     }
     const [products, settings] = await Promise.all([
