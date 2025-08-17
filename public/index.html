@@ -172,24 +172,24 @@
                */
               <div className="mt-auto pt-2 flex flex-col sm:grid sm:grid-cols-2 sm:gap-2 space-y-1 sm:space-y-0">
                 {/* Unidade à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
                   <span className="font-semibold text-gray-600">Unidade (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
+                  <span className="font-bold text-gray-800 sm:ml-2">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
                 </div>
                 {/* Pacote à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
                   <span className="font-semibold text-gray-600">Pacote (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
+                  <span className="font-bold text-gray-800 sm:ml-2">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
                 </div>
                 {/* Unidade a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
                   <span className="font-semibold text-gray-600">Unidade (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
+                  <span className="font-bold text-gray-800 sm:ml-2">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
                 </div>
                 {/* Pacote a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
                   <span className="font-semibold text-gray-600">Pacote (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
+                  <span className="font-bold text-gray-800 sm:ml-2">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -248,11 +248,18 @@
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
 
       const order = catalog.settings.categoriesOrder || [];
-      // "Todas" -> groups in configured order
-      const grouped = (activeCategory? [activeCategory] : order).map(c => ({
-        category: c,
-        products: catalog.products.filter(p => p.category === c)
-      })).filter(g=>g.products.length>0);
+      // When searching, group by the categories present in the results
+      const categoriesToShow = activeCategory
+        ? [activeCategory]
+        : (query
+            ? Array.from(new Set(catalog.products.map(p => p.category)))
+            : order);
+      const grouped = categoriesToShow
+        .map(c => ({
+          category: c,
+          products: catalog.products.filter(p => p.category === c)
+        }))
+        .filter(g => g.products.length > 0);
 
       return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -452,21 +459,21 @@
                     <td className="p-4">{p.codes||'-'}</td>
                     <td className="p-4">{p.category}</td>
                     <td className="p-4">{p.active?'Sim':'Não'}</td>
-                    <td className="p-4 flex flex-col sm:flex-row gap-2 min-w-[150px]">
+                    <td className="p-4 flex flex-col md:flex-row gap-2 min-w-[120px]">
                       {/* Em telas menores os botões ficam empilhados para melhorar a responsividade */}
                       <button
                         onClick={() => navigate('admin/product/edit', { id: p.id })}
-                        className="bg-green-600 text-white px-2 py-1 rounded-md text-xs sm:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
+                        className="bg-green-600 text-white px-2 py-1 rounded-md text-xs md:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
                       >
-                        <span className="hidden sm:inline">Editar</span>
-                        <span className="sm:hidden inline">✏️</span>
+                        <span className="hidden md:inline">Editar</span>
+                        <span className="md:hidden inline">✏️</span>
                       </button>
                       <button
                         onClick={() => remove(p.id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded-md text-xs sm:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
+                        className="bg-red-600 text-white px-2 py-1 rounded-md text-xs md:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
                       >
-                        <span className="hidden sm:inline">Excluir</span>
-                        <span className="sm:hidden inline">🗑️</span>
+                        <span className="hidden md:inline">Excluir</span>
+                        <span className="md:hidden inline">🗑️</span>
                       </button>
                     </td>
                   </tr>
@@ -537,14 +544,19 @@
         }
       }
       const save = async ()=>{
-        const fd = new FormData();
-        Object.entries(product).forEach(([k,v])=>{
-          if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
-          fd.append(k, v);
-        });
-        if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
-        if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
-        navigate('admin/products');
+        try{
+          const fd = new FormData();
+          Object.entries(product).forEach(([k,v])=>{
+            if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
+            fd.append(k, v);
+          });
+          if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
+          if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
+          navigate('admin/products');
+        }catch(err){
+          console.error(err);
+          alert('Erro ao salvar produto');
+        }
       }
 
       if (loading) return <div className="text-center text-white text-2xl font-bold pt-20">Carregando...</div>;
@@ -559,23 +571,28 @@
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div><label className="block font-semibold mb-1">Nome</label><input name="name" value={product.name} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
                   <div><label className="block font-semibold mb-1">Categoria</label>
-                    <select
-                      name="category"
-                      value={product.category}
-                      onChange={change}
-                      className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"
-                    >
-                      {categories.length === 0 && (
-                        <option value="" disabled>
-                          Selecione uma categoria
-                        </option>
-                      )}
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                    {categories.length > 0 ? (
+                      <select
+                        name="category"
+                        value={product.category}
+                        onChange={change}
+                        className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"
+                      >
+                        {categories.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        name="category"
+                        value={product.category}
+                        onChange={change}
+                        placeholder="Categoria"
+                        className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
