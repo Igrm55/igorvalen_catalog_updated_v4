@@ -58,6 +58,8 @@
     }
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .iso-round img{ width:80%; height:80%; object-fit:contain; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
@@ -66,6 +68,7 @@
 
   <script type="text/babel">
     const { useState, useEffect, useRef, createContext, useContext } = React;
+    const formatBRL = (v)=> (Number(v) || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const AppContext = createContext();
     const api = {
       loginAdmin: async (password)=>{
@@ -165,31 +168,36 @@
 <p className="text-xs text-gray-600 mt-1">Código(s): {product.codes || "-"}</p>
             <p className="text-sm font-semibold mb-2" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-600">{product.flavors || '-'}</span></p>
             {showPrices && (
-              /*
-               * Mostramos os preços em um layout flexível: em telas pequenas os itens ficam empilhados,
-               * e a partir de sm são distribuídos em duas colunas. Reduzimos o tamanho da fonte nas
-               * telas menores para evitar sobreposição e garantir legibilidade.
-               */
-              <div className="mt-auto pt-2 flex flex-col sm:grid sm:grid-cols-2 sm:gap-2 space-y-1 sm:space-y-0">
-                {/* Unidade à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Unidade (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
-                </div>
-                {/* Pacote à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Pacote (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
-                </div>
-                {/* Unidade a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Unidade (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
-                </div>
-                {/* Pacote a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Pacote (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
+              <div className="mt-auto pt-2">
+                <div className="flex items-center gap-2 sm:gap-3 whitespace-nowrap overflow-x-auto scrollbar-none -mx-1 px-1 min-w-0">
+                  <span
+                    tabIndex="0"
+                    aria-label={`Fardo a prazo: ${formatBRL(product.priceFP)}`}
+                    className="shrink-0 rounded-md px-2 py-1 text-[13px] sm:text-sm font-semibold leading-none border min-w-[80px] inline-flex items-center justify-center bg-red-50 text-red-700 border-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    FP {formatBRL(product.priceFP)}
+                  </span>
+                  <span
+                    tabIndex="0"
+                    aria-label={`Fardo à vista: ${formatBRL(product.priceFV)}`}
+                    className="shrink-0 rounded-md px-2 py-1 text-[13px] sm:text-sm font-semibold leading-none border min-w-[80px] inline-flex items-center justify-center bg-green-50 text-green-700 border-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    FV {formatBRL(product.priceFV)}
+                  </span>
+                  <span
+                    tabIndex="0"
+                    aria-label={`Unidade a prazo: ${formatBRL(product.priceUP)}`}
+                    className="shrink-0 rounded-md px-2 py-1 text-[13px] sm:text-sm font-semibold leading-none border min-w-[80px] inline-flex items-center justify-center bg-red-50 text-red-700 border-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    UP {formatBRL(product.priceUP)}
+                  </span>
+                  <span
+                    tabIndex="0"
+                    aria-label={`Unidade à vista: ${formatBRL(product.priceUV)}`}
+                    className="shrink-0 rounded-md px-2 py-1 text-[13px] sm:text-sm font-semibold leading-none border min-w-[80px] inline-flex items-center justify-center bg-green-50 text-green-700 border-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    UV {formatBRL(product.priceUV)}
+                  </span>
                 </div>
               </div>
             )}
