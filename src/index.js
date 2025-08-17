@@ -55,10 +55,14 @@ app.get('/api/catalog', async (req,res)=>{
     const where = { active: true }
     if (category) where.category = category
     if (q){
+      // SQLite não suporta a opção "mode: 'insensitive'" utilizada pelo Prisma
+      // em outros bancos para tornar a busca case-insensitive. Como o operador
+      // LIKE do SQLite já é case-insensitive para caracteres ASCII por padrão,
+      // basta utilizar `contains` diretamente sem o parâmetro `mode`.
       where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { codes: { contains: q, mode: 'insensitive' } },
-        { category: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { codes: { contains: q } },
+        { category: { contains: q } },
       ]
     }
     const [products, settings] = await Promise.all([
