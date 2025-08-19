@@ -20,7 +20,7 @@
       --text: #111111;
       --bg-soft: #f3f4f6;
     }
-    html, body { min-height:100%; font-family:'Poppins', sans-serif; }
+    html, body { min-height:100%; font-family:'Poppins', sans-serif; scroll-behavior: smooth; }
     body { background-color: var(--brand-red); position:relative; overflow-x:hidden; }
     body::before {
       content:''; position:absolute; top:0; left:0; right:0;
@@ -124,7 +124,7 @@
                 <span className="text-3xl font-bold" style={{color:'var(--brand-green)'}}>Igor</span>
                 <span className="text-3xl font-bold" style={{color:'var(--brand-red)'}}>Valen</span>
               </div>
-              <span className="block text-sm -mt-1 font-medium text-gray-800">Distribuidora</span>
+              <span className="block text-sm -mt-1 font-medium text-gray-800 text-right">Distribuidora</span>
             </div>
             <div className="flex items-center space-x-4 text-white font-semibold">
               <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">Catálogo</button>
@@ -135,7 +135,7 @@
       )
     };
 
-    // *** SOLUÇÃO DEFINITIVA: ProductCard com layout final de preços ***
+    // *** ProductCard com layout de preços atualizado ***
     const ProductCard = ({product, showPrices})=>{
       return (
         <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
@@ -148,33 +148,29 @@
             <p className="text-sm font-semibold mb-3" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-700">{product.flavors || '-'}</span></p>
             {showPrices && (
               <div className="mt-auto pt-3 border-t space-y-2">
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700">Unidade</span>
-                    <span className="text-xs font-medium text-gray-500">(à vista)</span>
+                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-700">Unidade à vista</span>
+                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
                   </div>
-                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
                 </div>
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700">Pacote</span>
-                    <span className="text-xs font-medium text-gray-500">(à vista)</span>
+                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-700">Pacote à vista</span>
+                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
                   </div>
-                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
                 </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700">Unidade</span>
-                    <span className="text-xs font-medium text-gray-500">(a prazo)</span>
+                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-700">Unidade a prazo</span>
+                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
                   </div>
-                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
                 </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700">Pacote</span>
-                    <span className="text-xs font-medium text-gray-500">(a prazo)</span>
+                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-700">Pacote a prazo</span>
+                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
                   </div>
-                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -189,6 +185,7 @@
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
+      const contentRef = useRef(null);
 
       const loadCatalog = async (searchQuery, category) => {
         setLoading(true);
@@ -218,6 +215,7 @@
         setActiveCategory(category);
         setQuery('');
         loadCatalog('', category);
+        contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
       const order = catalog.settings.categoriesOrder || [];
@@ -239,7 +237,7 @@
               ].map((it,idx)=>(
                 <div key={idx} className="text-white">
                   <div className="iso-round shadow-lg">
-                    <img src={it.src} alt={it.title} />
+                    <img src={it.src} alt={it.title} onError={(e)=>{e.target.style.display='none'; e.target.parentElement.innerHTML = `<span class='text-xs text-gray-500'>Imagem não<br>disponível</span>`}} />
                   </div>
                   <h3 className="font-bold text-lg">{it.title}</h3>
                   <p className="text-sm opacity-90">{it.desc}</p>
@@ -252,7 +250,7 @@
             <img src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
           </div>
 
-          <div className="panel p-6 mb-8">
+          <div ref={contentRef} className="panel p-6 mb-8">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
@@ -304,7 +302,7 @@
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="grid grid-cols-4 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                       {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices}/>)}
                     </div>
                   </div>
