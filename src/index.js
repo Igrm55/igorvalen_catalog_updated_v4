@@ -56,9 +56,9 @@ app.get('/api/catalog', async (req,res)=>{
     if (category) where.category = category
     if (q){
       where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { codes: { contains: q, mode: 'insensitive' } },
-        { category: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { codes: { contains: q } },
+        { category: { contains: q } },
       ]
     }
     const [products, settings] = await Promise.all([
