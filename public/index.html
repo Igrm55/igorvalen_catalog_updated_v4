@@ -70,6 +70,10 @@
       getCatalog: async (q)=>{
         const params = new URLSearchParams(q||{}).toString();
         const res = await fetch('/api/catalog'+(params?'?'+params:''))
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Erro ao carregar catálogo')
+        }
         return res.json()
       },
       getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
@@ -194,6 +198,7 @@
           setCatalog(data);
         } catch (error) {
           console.error("Falha ao carregar o catálogo:", error);
+          setCatalog({ products: [], settings: { categoriesOrder: [] } });
         } finally {
           setLoading(false);
         }
