@@ -29,7 +29,7 @@
     }
     body::after {
       content:''; position:fixed; inset:0;
-      background-image: url('data:image/svg+xml;utf8,<svg width="100" height="20" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg"><path d="M0 10 C 25 0, 75 20, 100 10" stroke="%23000000" stroke-width="0.5" fill="none" opacity="0.06"/></svg>');
+      background-image: url('data:image/svg+xml;utf8,<svg width="100" height="20" viewBox="0 0 100" xmlns="http://www.w3.org/2000/svg"><path d="M0 10 C 25 0, 75 20, 100 10" stroke="%23000000" stroke-width="0.5" fill="none" opacity="0.06"/></svg>');
       background-size:100px 20px; pointer-events:none; z-index:1;
     }
     #root { position:relative; z-index:2; padding-bottom:200px; }
@@ -45,15 +45,11 @@
     .toggle.active { background:#16a34a; }
     .knob { width:24px; height:24px; background:white; border-radius:9999px; position:absolute; top:2px; left:2px; transition:left .2s; }
     .toggle.active .knob { left:26px; }
-    .badge-code { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; font-size:11px; padding:2px 6px; border-radius:8px; }
-    /* Preenchendo completamente o banner do topo com a imagem */
     .banner img {
       width: 100%;
-      /* Define uma altura maior para o banner para que a imagem preencha melhor a área verde */
       height: 500px;
       max-height: none;
       object-fit: cover;
-      /* mantém a cor de fundo caso a imagem não carregue */
       background: #0f8a3a;
     }
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
@@ -62,11 +58,10 @@
 </head>
 <body>
   <div id="root"></div>
-  <div class="wave-container"></div>
-
   <script type="text/babel">
     const { useState, useEffect, useRef, createContext, useContext } = React;
     const AppContext = createContext();
+
     const api = {
       loginAdmin: async (password)=>{
         const res = await fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password}) })
@@ -89,9 +84,7 @@
       const [route, setRoute] = useState({name:'home', params:{}});
       const [isAdmin, setIsAdmin] = useState(false);
       const navigate = (name, params = {}) => {
-        // Constrói o caminho base
         let path = name === 'home' ? '/' : `/${name}`;
-        // Se houver um id informado nos parâmetros adicionamos como query string
         if (params && typeof params.id !== 'undefined' && params.id !== null) {
           path += `?id=${encodeURIComponent(params.id)}`;
         }
@@ -126,7 +119,7 @@
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-24">
-            <div className="bg-white px-4 py-2 rounded-xl shadow cursor-pointer" onClick={()=>navigate('home')}>
+            <div className="bg-white px-4 py-2 rounded-xl shadow cursor-pointer transform hover:scale-105 transition-transform" onClick={()=>navigate('home')}>
               <div className="flex items-baseline">
                 <span className="text-3xl font-bold" style={{color:'var(--brand-green)'}}>Igor</span>
                 <span className="text-3xl font-bold" style={{color:'var(--brand-red)'}}>Valen</span>
@@ -134,99 +127,58 @@
               <span className="block text-sm -mt-1 font-medium text-gray-800">Distribuidora</span>
             </div>
             <div className="flex items-center space-x-4 text-white font-semibold">
-              <button
-                onClick={() => navigate('home')}
-                className="hover:text-green-200"
-              >
-                Catálogo
-              </button>
-              {/* Botão da área administrativa com mais contexto e formato arredondado */}
-              <button
-                onClick={() => navigate('admin')}
-                className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-colors"
-              >
-                Área do&nbsp;Admin
-              </button>
+              <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">Catálogo</button>
+              <button onClick={() => navigate('admin')} className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-all transform hover:scale-105">Área do&nbsp;Admin</button>
             </div>
           </div>
         </header>
       )
     };
 
+    // *** SOLUÇÃO DEFINITIVA: ProductCard com layout final de preços ***
     const ProductCard = ({product, showPrices})=>{
-      const codeLabel = product.codes && product.codes.includes(',') ? 'Códigos' : 'Código';
       return (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-lg relative">
-          <div className="bg-white p-2 relative h-44">
-<img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+          <div className="bg-white p-2 relative h-48">
+            <img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
           </div>
           <div className="p-4 flex-grow flex flex-col">
-            <h3 className="font-bold text-lg" style={{color:'var(--brand-green)'}}>{product.name}</h3>
-<p className="text-xs text-gray-600 mt-1">Código(s): {product.codes || "-"}</p>
-            <p className="text-sm font-semibold mb-2" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-600">{product.flavors || '-'}</span></p>
+            <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
+            <p className="text-xs text-gray-500 mt-1">Código(s): {product.codes || "-"}</p>
+            <p className="text-sm font-semibold mb-3" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-700">{product.flavors || '-'}</span></p>
             {showPrices && (
-              /*
-               * Mostramos os preços em um layout flexível: em telas pequenas os itens ficam empilhados,
-               * e a partir de sm são distribuídos em duas colunas. Reduzimos o tamanho da fonte nas
-               * telas menores para evitar sobreposição e garantir legibilidade.
-               */
-              <div className="mt-auto pt-2 flex flex-col sm:grid sm:grid-cols-2 sm:gap-2 space-y-1 sm:space-y-0">
-                {/* Unidade à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Unidade (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
+              <div className="mt-auto pt-3 border-t space-y-2">
+                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-700">Unidade</span>
+                    <span className="text-xs font-medium text-gray-500">(à vista)</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
                 </div>
-                {/* Pacote à vista */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-green-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Pacote (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
+                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-700">Pacote</span>
+                    <span className="text-xs font-medium text-gray-500">(à vista)</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
                 </div>
-                {/* Unidade a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Unidade (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
+                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-700">Unidade</span>
+                    <span className="text-xs font-medium text-gray-500">(a prazo)</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
                 </div>
-                {/* Pacote a prazo */}
-                <div className="flex justify-between items-center pl-2 border-l-4 border-red-500 rounded text-xs sm:text-sm">
-                  <span className="font-semibold text-gray-600">Pacote (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
+                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-700">Pacote</span>
+                    <span className="text-xs font-medium text-gray-500">(a prazo)</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
                 </div>
               </div>
             )}
           </div>
-        </div>
-      )
-    };
-
-    const OfflineButtons = ({onCache})=>{
-      const [status, setStatus] = useState('');
-      const cacheAll = async ()=>{
-        setStatus('Salvando...');
-        try{
-          // pre-cache catalog + images
-          const res = await fetch('/api/catalog');
-          const data = await res.json();
-          const urls = ['/','/index.html','/img/placeholder.png',
-            ...data.products.map(p=>p.imageUrl || '/img/placeholder.png')
-          ];
-          if ('serviceWorker' in navigator) await navigator.serviceWorker.register('/sw.js');
-          const reg = await navigator.serviceWorker.ready;
-          const cache = await caches.open('manual-v4');
-          await cache.addAll(Array.from(new Set(urls)));
-          setStatus('Salvo p/ offline ✅');
-        }catch(e){
-          console.error(e); setStatus('Falhou 😕');
-        }
-      };
-      const clearAll = async ()=>{
-        const keys = await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k)));
-        setStatus('Limpo 🧹');
-      };
-      return (
-        <div className="flex items-center gap-3">
-          
-          <button onClick={clearAll} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-full">Limpar offline</button>
-          {status && <span className="text-sm text-white">{status}</span>}
         </div>
       )
     };
@@ -238,17 +190,37 @@
       const [activeCategory, setActiveCategory] = useState(null);
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
 
-      const load = async ()=>{
+      const loadCatalog = async (searchQuery, category) => {
         setLoading(true);
-        const data = await api.getCatalog({ q: query, category: activeCategory || '' });
-        setCatalog(data);
-        setLoading(false);
+        try {
+          const data = await api.getCatalog({ q: searchQuery, category: category || '' });
+          setCatalog(data);
+        } catch (error) {
+          console.error("Falha ao carregar o catálogo:", error);
+        } finally {
+          setLoading(false);
+        }
       }
-      useEffect(()=>{ load() }, [query, activeCategory]);
+      
+      useEffect(() => {
+        loadCatalog('', null);
+      }, []);
+
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
 
+      const handleSearchSubmit = (e) => {
+          e.preventDefault();
+          setActiveCategory(null);
+          loadCatalog(query, null);
+      };
+      
+      const handleCategoryClick = (category) => {
+        setActiveCategory(category);
+        setQuery('');
+        loadCatalog('', category);
+      };
+
       const order = catalog.settings.categoriesOrder || [];
-      // "Todas" -> groups in configured order
       const grouped = (activeCategory? [activeCategory] : order).map(c => ({
         category: c,
         products: catalog.products.filter(p => p.category === c)
@@ -256,7 +228,6 @@
 
       return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-          {/* ISO section */}
           <div className="my-8 text-center">
             <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
             <p className="max-w-2xl mx-auto mb-8 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.4)'}}>Seguimos recomendações rigorosas e controle de qualidade.</p>
@@ -277,18 +248,16 @@
             </div>
           </div>
 
-          {/* Top banner */}
           <div className="banner mb-6 rounded-2xl overflow-hidden shadow-lg">
             <img src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
           </div>
 
-          {/* Controls */}
           <div className="panel p-6 mb-8">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <button onClick={()=>setActiveCategory(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
+                <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
                 {order.map(cat => (
-                  <button key={cat} onClick={()=>setActiveCategory(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{cat}</button>
+                  <button key={cat} onClick={() => handleCategoryClick(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{cat}</button>
                 ))}
               </div>
               <div className="flex items-center gap-4">
@@ -298,50 +267,30 @@
                     <div className="knob"></div>
                   </div>
                 </div>
-                
               </div>
             </div>
-            {/*
-              * Caixa de busca: encapsulamos o input em um formulário para capturar o evento de submit
-              * e disparar a função de carregamento. O clique no botão ou pressionar Enter fará a busca.
-              */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                load();
-              }}
-              className="relative"
-            >
+            <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 type="text"
                 placeholder="Buscar por nome, categoria ou código..."
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  // Ao digitar um termo de busca, sempre buscamos em todas as categorias
-                  setActiveCategory(null);
-                }}
+                onChange={(e) => setQuery(e.target.value)}
                 className="w-full pl-4 pr-32 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <button
                 type="submit"
-                onClick={(e) => {
-                  e.preventDefault();
-                  load();
-                }}
-                className="absolute top-1/2 right-2 -translate-y-1/2 bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700"
+                className="absolute top-1/2 right-2 -translate-y-1/2 bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700 transition-colors"
               >
                 Buscar
               </button>
             </form>
           </div>
 
-          {/* Groups */}
           {loading ? (
-            <div className="text-center text-white text-2xl font-bold">Carregando...</div>
+            <div className="text-center text-white text-2xl font-bold py-10">Carregando...</div>
           ) : grouped.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <p className="text-gray-700 font-semibold">Nenhum produto encontrado.</p>
+              <p className="text-gray-700 font-semibold">Nenhum produto encontrado. Limpe a busca para ver todos os itens.</p>
             </div>
           ) : (
             grouped.map(group=>{
@@ -355,7 +304,7 @@
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-4 gap-4 sm:gap-6">
                       {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices}/>)}
                     </div>
                   </div>
@@ -389,13 +338,14 @@
           <form onSubmit={submit} className="panel p-8 w-full max-w-sm">
             <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Bem-vindo de volta!</h1>
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite a senha admin" className="w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-900 rounded-xl mb-4 focus:outline-none focus:border-green-500"/>
-            <button className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400" disabled={loading}>{loading?'Entrando...':'Entrar'}</button>
+            <button className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-colors" disabled={loading}>{loading?'Entrando...':'Entrar'}</button>
             {error && <p className="text-red-500 text-center mt-4">{error}</p>}
           </form>
         </div>
       )
     };
 
+    // *** SOLUÇÃO PROFISSIONAL: AdminProductListPage com layout de cards para mobile ***
     const AdminProductListPage = ()=>{
       const { navigate } = useApp();
       const [products,setProducts]=useState([]);
@@ -407,7 +357,7 @@
       }
       useEffect(()=>{ load() },[]);
       useEffect(()=>{
-        if (ref.current && !loading){
+        if (ref.current && !loading && window.innerWidth >= 768){ // Sortable only on desktop
           new Sortable(ref.current, {
             animation:150,
             handle: '.handle',
@@ -432,55 +382,78 @@
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Produtos</h1>
-            <div className="flex gap-2">
-              <button onClick={()=>navigate('admin/product/new')} className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700">Adicionar</button>
-            </div>
+            <button onClick={()=>navigate('admin/product/new')} className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">Adicionar</button>
           </div>
-          <div className="panel overflow-x-auto p-4">
-            <table className="w-full text-left text-gray-800">
-              <thead><tr className="border-b border-gray-200">
-                <th className="p-4 w-12"></th><th className="p-4">Imagem</th><th className="p-4">Produto</th>
-                <th className="p-4">Códigos</th><th className="p-4">Categoria</th><th className="p-4">Ativo</th><th className="p-4">Ações</th>
+          
+          {/* Layout de Tabela para Telas Médias e Maiores */}
+          <div className="panel p-4 hidden md:block">
+            <table className="w-full">
+              <thead><tr className="border-b-2 border-gray-200">
+                <th className="p-3 text-left text-sm font-semibold text-gray-500 w-12"></th>
+                <th className="p-3 text-left text-sm font-semibold text-gray-500">Produto</th>
+                <th className="p-3 text-left text-sm font-semibold text-gray-500">Categoria</th>
+                <th className="p-3 text-left text-sm font-semibold text-gray-500">Ativo</th>
+                <th className="p-3 text-right text-sm font-semibold text-gray-500">Ações</th>
               </tr></thead>
               <tbody ref={ref}>
-                {loading? (<tr><td colSpan="7" className="p-4 text-center">Carregando...</td></tr>):
-                  products.map((p,idx)=>(
+                {loading? (<tr><td colSpan="5" className="p-4 text-center">Carregando...</td></tr>):
+                  products.map((p)=>(
                   <tr key={p.id} className="border-b border-gray-200 last:border-b-0">
-                    <td className="p-4 text-center handle text-gray-400">☰</td>
-                    <td className="p-4"><img src={p.imageUrl||'/img/placeholder.png'} className="w-12 h-12 object-contain rounded bg-gray-100 p-1"/></td>
-                    <td className="p-4 font-semibold">{p.name}</td>
-                    <td className="p-4">{p.codes||'-'}</td>
-                    <td className="p-4">{p.category}</td>
-                    <td className="p-4">{p.active?'Sim':'Não'}</td>
-                    <td className="p-4 flex flex-col sm:flex-row gap-2 min-w-[150px]">
-                      {/* Em telas menores os botões ficam empilhados para melhorar a responsividade */}
-                      <button
-                        onClick={() => navigate('admin/product/edit', { id: p.id })}
-                        className="bg-green-600 text-white px-2 py-1 rounded-md text-xs sm:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
-                      >
-                        <span className="hidden sm:inline">Editar</span>
-                        <span className="sm:hidden inline">✏️</span>
-                      </button>
-                      <button
-                        onClick={() => remove(p.id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded-md text-xs sm:text-sm font-semibold flex-1 text-center whitespace-nowrap flex items-center justify-center"
-                      >
-                        <span className="hidden sm:inline">Excluir</span>
-                        <span className="sm:hidden inline">🗑️</span>
-                      </button>
+                    <td className="p-3 text-center handle text-gray-400 cursor-move">☰</td>
+                    <td className="p-3 font-semibold text-gray-800">
+                      <div className="flex items-center gap-3">
+                        <img src={p.imageUrl||'/img/placeholder.png'} className="w-12 h-12 object-contain rounded bg-gray-100 p-1"/>
+                        <div>{p.name}<div className="text-xs text-gray-500 font-normal">Códigos: {p.codes || '-'}</div></div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-gray-600">{p.category}</td>
+                    <td className="p-3 text-gray-600">{p.active?'Sim':'Não'}</td>
+                    <td className="p-3 whitespace-nowrap text-right">
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => navigate('admin/product/edit', { id: p.id })} className="bg-blue-500 text-white p-2 rounded-md text-sm font-semibold hover:bg-blue-600 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
+                        </button>
+                        <button onClick={() => remove(p.id)} className="bg-red-500 text-white p-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Layout de Cards para Telas Pequenas */}
+          <div className="md:hidden space-y-4">
+            {loading ? <div className="text-center text-white">Carregando...</div> : 
+              products.map(p => (
+                <div key={p.id} className="panel p-4 flex gap-4 items-center">
+                  <img src={p.imageUrl||'/img/placeholder.png'} className="w-16 h-16 object-contain rounded bg-gray-100 p-1"/>
+                  <div className="flex-grow">
+                    <h3 className="font-bold text-gray-800">{p.name}</h3>
+                    <p className="text-sm text-gray-500">{p.category}</p>
+                    <p className="text-xs text-gray-500">Ativo: {p.active ? 'Sim' : 'Não'}</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => navigate('admin/product/edit', { id: p.id })} className="bg-blue-500 text-white p-2 rounded-md text-sm font-semibold hover:bg-blue-600 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
+                    </button>
+                    <button onClick={() => remove(p.id)} className="bg-red-500 text-white p-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
         </div>
       )
     };
 
     const AdminProductEditPage = ()=>{
       const { navigate, route } = useApp();
-      // O identificador pode vir via estado da navegação ou pela query string (id na URL)
       let id = route.params?.id;
       if (typeof id === 'undefined' || id === null) {
         const sp = new URLSearchParams(location.search);
@@ -499,12 +472,9 @@
             const s = await (await fetch('/api/settings')).json();
             const cats = s.categoriesOrder || [];
             setCategories(cats);
-            // Se houver um id, tenta buscar o produto. Caso falhe ou retorne erro,
-            // continuamos com um produto vazio para permitir a edição.
             if (id) {
               try {
                 const p = await api.getProduct(id);
-                // Se o produto não for encontrado, criamos um objeto vazio para edição
                 if (p && !p.error) {
                   setProduct(p);
                   if (p.imageUrl) setImagePreview(p.imageUrl);
@@ -515,7 +485,6 @@
                 setProduct({ name: '', category: cats[0] || '', active: true });
               }
             } else {
-              // Novo produto
               setProduct({ name: '', category: cats[0] || '', active: true });
             }
           } catch (err) {
@@ -525,545 +494,6 @@
           setLoading(false);
         })();
       }, [id]);
-
-      const change = (e)=>{
-        const { name, value, type, checked } = e.target;
-        setProduct(p=>({...p, [name]: (type==='checkbox'? checked : value)}));
-      }
-      const onImage = (e)=>{
-        if (e.target.files && e.target.files[0]){
-          const file = e.target.files[0];
-          setImagePreview(URL.createObjectURL(file));
-        }
-      }
-      const save = async ()=>{
-        const fd = new FormData();
-        Object.entries(product).forEach(([k,v])=>{
-          if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
-          fd.append(k, v);
-        });
-        if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
-        if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
-        navigate('admin/products');
-      }
-
-      if (loading) return <div className="text-center text-white text-2xl font-bold pt-20">Carregando...</div>;
-      if (!product) return <div className="text-center text-red-500 text-2xl font-bold pt-20">Produto não encontrado.</div>;
-
-      return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-          <h1 className="text-3xl font-bold text-white mb-6" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{id? 'Editar Produto':'Adicionar Produto'}</h1>
-          <div className="panel p-8 text-gray-800">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div><label className="block font-semibold mb-1">Nome</label><input name="name" value={product.name} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  <div><label className="block font-semibold mb-1">Categoria</label>
-                    <select
-                      name="category"
-                      value={product.category}
-                      onChange={change}
-                      className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"
-                    >
-                      {categories.length === 0 && (
-                        <option value="" disabled>
-                          Selecione uma categoria
-                        </option>
-                      )}
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div><label className="block font-semibold mb-1">Códigos</label><input name="codes" value={product.codes||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  <div><label className="block font-semibold mb-1">Sabores/Disponibilidade</label><input name="flavors" value={product.flavors||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div><label className="block font-semibold mb-1">Preço Unidade (à vista)</label><input name="priceUV" type="text" value={product.priceUV??''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                    <div><label className="block font-semibold mb-1">Preço Unidade (a prazo)</label><input name="priceUP" type="text" value={product.priceUP??''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  </div>
-                  <div className="space-y-4">
-                    <div><label className="block font-semibold mb-1">Preço Pacote (à vista)</label><input name="priceFV" type="text" value={product.priceFV??''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                    <div><label className="block font-semibold mb-1">Preço Pacote (a prazo)</label><input name="priceFP" type="text" value={product.priceFP??''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block font-semibold mb-1">Imagem do Produto</label>
-                <div className="w-full h-52 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed">
-                  {imagePreview? <img src={imagePreview} className="h-full w-full object-contain rounded-lg"/> : <span className="text-gray-500">Pré-visualização</span>}
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" onChange={onImage} className="hidden"/>
-                <button onClick={()=>fileRef.current.click()} className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300">Adicionar Imagem</button>
-              </div>
-            </div>
-            <div className="mt-6 flex items-center justify-between">
-              <label className="flex items-center gap-2"><input type="checkbox" name="active" checked={!!product.active} onChange={(e)=>setProduct(p=>({...p, active:e.target.checked}))}/> Ativo</label>
-              <div className="flex gap-2">
-                <button onClick={()=>navigate('admin/products')} className="bg-gray-200 text-gray-800 font-semibold px-6 py-2 rounded-lg">Cancelar</button>
-                <button onClick={save} className="bg-green-600 text-white font-semibold px-6 py-2 rounded-lg">Salvar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    };
-
-    const App = ()=>{
-      const { route, auth } = useApp();
-      if (!auth.isAdmin && route.name.startsWith('admin')) return <AdminLoginPage/>;
-      switch(route.name){
-        case 'home': return <HomePage/>;
-        case 'admin': return <AdminLoginPage/>;
-        case 'admin/products': return <AdminProductListPage/>;
-        case 'admin/product/edit': return <AdminProductEditPage/>;
-        case 'admin/product/new': return <AdminProductEditPage/>;
-        default: return <HomePage/>;
-      }
-    };
-
-    ReactDOM.render(<AppProvider><Header/><main><App/></main></AppProvider>, document.getElementById('root'));
-
-    // Service worker auto-clean & register
-    if ('serviceWorker' in navigator){
-      window.addEventListener('load', async ()=>{
-        try{
-          const regs = await navigator.serviceWorker.getRegistrations();
-          regs.forEach(r=>{
-            // keep only current scope sw.js
-            if (!r.active || (r.active && !r.active.scriptURL.endsWith('/sw.js'))) r.unregister();
-          });
-          await navigator.serviceWorker.register('/sw.js');
-        }catch(e){ console.warn('SW',e) }
-      })
-    }
-  </script>
-</body>
-</html><!--
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catálogo - IgorValen Distribuidora</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --brand-green: #0f8a3a;
-      --brand-green-darker: #0b5d29;
-      --brand-red: #de1f36;
-      --text: #111111;
-      --bg-soft: #f3f4f6;
-    }
-    html, body { min-height:100%; font-family:'Poppins', sans-serif; }
-    body { background-color: var(--brand-red); position:relative; overflow-x:hidden; }
-    body::before {
-      content:''; position:absolute; top:0; left:0; right:0;
-      height:50vh; min-height:400px; background:var(--brand-green);
-      clip-path: ellipse(100% 100% at 50% 0%); z-index:0;
-    }
-    body::after {
-      content:''; position:fixed; inset:0;
-      background-image: url('data:image/svg+xml;utf8,<svg width="100" height="20" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg"><path d="M0 10 C 25 0, 75 20, 100 10" stroke="%23000000" stroke-width="0.5" fill="none" opacity="0.06"/></svg>');
-      background-size:100px 20px; pointer-events:none; z-index:1;
-    }
-    #root { position:relative; z-index:2; padding-bottom:200px; }
-    .panel { background:white; border-radius:1.5rem; box-shadow:0 10px 30px rgba(0,0,0,0.1); }
-    .category-wave-wrapper { position:relative; padding:2rem 1.5rem; border-radius:1.5rem; overflow:hidden; background-color:var(--brand-green); }
-    .category-wave-wrapper::before,.category-wave-wrapper::after{
-      content:''; position:absolute; left:-50%; width:200%; height:100%; background:var(--brand-green-darker); border-radius:50%; opacity:0.3; z-index:0;
-    }
-    .category-wave-wrapper::before{ top:10%; transform:rotate(4deg); }
-    .category-wave-wrapper::after{ bottom:10%; transform:rotate(-4deg); }
-    .category-content{ position:relative; z-index:1; }
-    .toggle { width:52px; height:28px; background:#e5e7eb; border-radius:9999px; position:relative; transition:background .2s; cursor:pointer; }
-    .toggle.active { background:#16a34a; }
-    .knob { width:24px; height:24px; background:white; border-radius:9999px; position:absolute; top:2px; left:2px; transition:left .2s; }
-    .toggle.active .knob { left:26px; }
-    .badge-code { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; font-size:11px; padding:2px 6px; border-radius:8px; }
-    .banner img { width:100%; height:auto; max-height:340px; object-fit:contain; background:#0f8a3a; }
-    .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
-    .iso-round img{ width:80%; height:80%; object-fit:contain; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <div class="wave-container"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useRef, createContext, useContext } = React;
-    const AppContext = createContext();
-    const api = {
-      loginAdmin: async (password)=>{
-        const res = await fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password}) })
-        return res.json()
-      },
-      getCatalog: async (q)=>{
-        const params = new URLSearchParams(q||{}).toString();
-        const res = await fetch('/api/catalog'+(params?'?'+params:''))
-        return res.json()
-      },
-      getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
-      getProduct: async (id)=> (await fetch('/api/products/'+id)).json(),
-      createProduct: async (formData)=> (await fetch('/api/products',{method:'POST', body: formData})).json(),
-      updateProduct: async (id, formData)=> (await fetch('/api/products/'+id,{ method:'PUT', body: formData })).json(),
-      deleteProduct: async (id)=> (await fetch('/api/products/'+id,{ method:'DELETE' })).json(),
-      reorderProducts: async (ids)=> (await fetch('/api/products/reorder',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ids) })).json(),
-    };
-
-    const AppProvider = ({children})=>{
-      const [route, setRoute] = useState({name:'home', params:{}});
-      const [isAdmin, setIsAdmin] = useState(false);
-      const navigate = (name, params={})=>{
-        const path = name === 'home' ? '/' : `/${name}`;
-        history.pushState(params,'',path);
-        setRoute({name, params});
-      };
-      useEffect(()=>{
-        const path = location.pathname.slice(1);
-        setRoute({ name: path || 'home', params:{} });
-        const onPop = (e)=>{
-          const p = location.pathname.slice(1);
-          setRoute({ name: p || 'home', params: e.state || {} });
-        }
-        addEventListener('popstate', onPop);
-        return ()=> removeEventListener('popstate', onPop);
-      },[]);
-      const auth = {
-        isAdmin,
-        login: async (pwd)=>{
-          const r = await api.loginAdmin(pwd);
-          if (r.ok) setIsAdmin(true);
-          return r;
-        },
-        logout: ()=> setIsAdmin(false),
-      };
-      return <AppContext.Provider value={{route, navigate, auth}}>{children}</AppContext.Provider>
-    };
-    const useApp = ()=> useContext(AppContext);
-
-    const Header = ()=>{
-      const { navigate } = useApp();
-      return (
-        <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-24">
-            <div className="bg-white px-4 py-2 rounded-xl shadow cursor-pointer" onClick={()=>navigate('home')}>
-              <div className="flex items-baseline">
-                <span className="text-3xl font-bold" style={{color:'var(--brand-green)'}}>Igor</span>
-                <span className="text-3xl font-bold" style={{color:'var(--brand-red)'}}>Valen</span>
-              </div>
-              <span className="block text-sm -mt-1 font-medium text-gray-800">Distribuidora</span>
-            </div>
-            <div className="flex items-center space-x-6 text-white font-semibold">
-              <button onClick={()=>navigate('home')} className="hover:text-green-200">Catálogo</button>
-              <button onClick={()=>navigate('admin')} className="hover:text-green-200">ADM</button>
-            </div>
-          </div>
-        </header>
-      )
-    };
-
-    const ProductCard = ({product, showPrices})=>{
-      const codeLabel = product.codes && product.codes.includes(',') ? 'Códigos' : 'Código';
-      return (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-lg relative">
-          <div className="bg-white p-2 relative h-44">
-<img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
-          </div>
-          <div className="p-4 flex-grow flex flex-col">
-            <h3 className="font-bold text-lg" style={{color:'var(--brand-green)'}}>{product.name}</h3>
-<p className="text-xs text-gray-600 mt-1">Código(s): {product.codes || "-"}</p>
-            <p className="text-sm font-semibold mb-2" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-600">{product.flavors || '-'}</span></p>
-            {showPrices && (
-              <div className="mt-auto pt-2 space-y-1">
-                <div className="flex justify-between items-center text-sm pl-2 border-l-4 border-green-500">
-                  <span className="font-semibold text-gray-600">Unid. (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUV||0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm pl-2 border-l-4 border-green-500">
-                  <span className="font-semibold text-gray-600">Pct. (à vista):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFV||0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm pl-2 border-l-4 border-red-500">
-                  <span className="font-semibold text-gray-600">Unid. (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceUP||0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm pl-2 border-l-4 border-red-500">
-                  <span className="font-semibold text-gray-600">Pct. (a prazo):</span>
-                  <span className="font-bold text-gray-800">R$ {Number(product.priceFP||0).toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )
-    };
-
-    const OfflineButtons = ({onCache})=>{
-      const [status, setStatus] = useState('');
-      const cacheAll = async ()=>{
-        setStatus('Salvando...');
-        try{
-          // pre-cache catalog + images
-          const res = await fetch('/api/catalog');
-          const data = await res.json();
-          const urls = ['/','/index.html','/img/placeholder.png',
-            ...data.products.map(p=>p.imageUrl || '/img/placeholder.png')
-          ];
-          if ('serviceWorker' in navigator) await navigator.serviceWorker.register('/sw.js');
-          const reg = await navigator.serviceWorker.ready;
-          const cache = await caches.open('manual-v4');
-          await cache.addAll(Array.from(new Set(urls)));
-          setStatus('Salvo p/ offline ✅');
-        }catch(e){
-          console.error(e); setStatus('Falhou 😕');
-        }
-      };
-      const clearAll = async ()=>{
-        const keys = await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k)));
-        setStatus('Limpo 🧹');
-      };
-      return (
-        <div className="flex items-center gap-3">
-          
-          <button onClick={clearAll} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-full">Limpar offline</button>
-          {status && <span className="text-sm text-white">{status}</span>}
-        </div>
-      )
-    };
-
-    const HomePage = ()=>{
-      const [catalog, setCatalog] = useState({ products:[], settings:{ categoriesOrder:[] } });
-      const [loading, setLoading] = useState(true);
-      const [query, setQuery] = useState('');
-      const [activeCategory, setActiveCategory] = useState(null);
-      const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
-
-      const load = async ()=>{
-        setLoading(true);
-        const data = await api.getCatalog({ q: query, category: activeCategory || '' });
-        setCatalog(data);
-        setLoading(false);
-      }
-      useEffect(()=>{ load() }, [query, activeCategory]);
-      useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
-
-      const order = catalog.settings.categoriesOrder || [];
-      // "Todas" -> groups in configured order
-      const grouped = (activeCategory? [activeCategory] : order).map(c => ({
-        category: c,
-        products: catalog.products.filter(p => p.category === c)
-      })).filter(g=>g.products.length>0);
-
-      return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-          {/* ISO section */}
-          <div className="my-8 text-center">
-            <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
-            <p className="max-w-2xl mx-auto mb-8 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.4)'}}>Seguimos recomendações rigorosas e controle de qualidade.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-9001.png', title:'ISO 9001', desc:'Gestão da qualidade e melhoria contínua.'},
-                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-14001.png', title:'ISO 14001', desc:'Gestão ambiental e proteção do meio ambiente.'},
-                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-45001-ES.png', title:'ISO 45001', desc:'Segurança e saúde ocupacional no trabalho.'},
-              ].map((it,idx)=>(
-                <div key={idx} className="text-white">
-                  <div className="iso-round shadow-lg">
-                    <img src={it.src} alt={it.title} />
-                  </div>
-                  <h3 className="font-bold text-lg">{it.title}</h3>
-                  <p className="text-sm opacity-90">{it.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top banner */}
-          <div className="banner mb-6 rounded-2xl overflow-hidden shadow-lg">
-            <img src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
-          </div>
-
-          {/* Controls */}
-          <div className="panel p-6 mb-8">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <button onClick={()=>setActiveCategory(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
-                {order.map(cat => (
-                  <button key={cat} onClick={()=>setActiveCategory(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{cat}</button>
-                ))}
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
-                  <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
-                    <div className="knob"></div>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
-            <div className="relative">
-              <input type="text" placeholder="Buscar por nome, categoria ou código..." onChange={e=>setQuery(e.target.value)} className="w-full pl-4 pr-32 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"/>
-              <button className="absolute top-1/2 right-2 -translate-y-1/2 bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700">Buscar</button>
-            </div>
-          </div>
-
-          {/* Groups */}
-          {loading ? <div className="text-center text-white text-2xl font-bold">Carregando...</div> : (
-            grouped.map(group=>{
-              const hasWaveBg = ['Bebidas não alcoólicas','Bomboneire','Utilidades'].includes(group.category);
-              const content = (
-                <>
-                  {group.category === 'Bebidas alcoólicas' && (
-                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
-                    </div>
-                  )}
-                  <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
-                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                      {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices}/>)}
-                    </div>
-                  </div>
-                </>
-              );
-              return (
-                <div key={group.category} className="mb-12">
-                  {hasWaveBg? (
-                    <div className="category-wave-wrapper"><div className="category-content">{content}</div></div>
-                  ) : content}
-                </div>
-              )
-            })
-          )}
-        </div>
-      )
-    };
-
-    const AdminLoginPage = ()=>{
-      const { navigate, auth } = useApp();
-      const [password,setPassword] = useState('');
-      const [loading,setLoading]=useState(false);
-      const [error,setError]=useState('');
-      const submit = async (e)=>{
-        e.preventDefault(); setLoading(true); setError('');
-        const r = await auth.login(password);
-        if (r.ok) navigate('admin/products'); else { setError('Senha incorreta.'); setLoading(false); }
-      };
-      return (
-        <div className="flex justify-center items-center pt-20">
-          <form onSubmit={submit} className="panel p-8 w-full max-w-sm">
-            <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Bem-vindo de volta!</h1>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite a senha admin" className="w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-900 rounded-xl mb-4 focus:outline-none focus:border-green-500"/>
-            <button className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400" disabled={loading}>{loading?'Entrando...':'Entrar'}</button>
-            {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-          </form>
-        </div>
-      )
-    };
-
-    const AdminProductListPage = ()=>{
-      const { navigate } = useApp();
-      const [products,setProducts]=useState([]);
-      const [loading,setLoading]=useState(true);
-      const ref = useRef(null);
-
-      const load = async ()=>{
-        setLoading(true); const data = await api.getAdminProducts(); setProducts(data); setLoading(false);
-      }
-      useEffect(()=>{ load() },[]);
-      useEffect(()=>{
-        if (ref.current && !loading){
-          new Sortable(ref.current, {
-            animation:150,
-            handle: '.handle',
-            onEnd: async (evt)=>{
-              const arr = [...products];
-              const [moved] = arr.splice(evt.oldIndex,1);
-              arr.splice(evt.newIndex,0,moved);
-              setProducts(arr);
-              await api.reorderProducts(arr.map(p=>p.id));
-            }
-          })
-        }
-      },[loading,products]);
-
-      const remove = async (id)=>{
-        if (!confirm('Excluir este produto?')) return;
-        await api.deleteProduct(id);
-        await load();
-      }
-
-      return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Produtos</h1>
-            <div className="flex gap-2">
-              <button onClick={()=>navigate('admin/product/new')} className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700">Adicionar</button>
-            </div>
-          </div>
-          <div className="panel overflow-x-auto p-4">
-            <table className="w-full text-left text-gray-800">
-              <thead><tr className="border-b border-gray-200">
-                <th className="p-4 w-12"></th><th className="p-4">Imagem</th><th className="p-4">Produto</th>
-                <th className="p-4">Códigos</th><th className="p-4">Categoria</th><th className="p-4">Ativo</th><th className="p-4">Ações</th>
-              </tr></thead>
-              <tbody ref={ref}>
-                {loading? (<tr><td colSpan="7" className="p-4 text-center">Carregando...</td></tr>):
-                  products.map((p,idx)=>(
-                  <tr key={p.id} className="border-b border-gray-200 last:border-b-0">
-                    <td className="p-4 text-center handle text-gray-400">☰</td>
-                    <td className="p-4"><img src={p.imageUrl||'/img/placeholder.png'} className="w-12 h-12 object-contain rounded bg-gray-100 p-1"/></td>
-                    <td className="p-4 font-semibold">{p.name}</td>
-                    <td className="p-4">{p.codes||'-'}</td>
-                    <td className="p-4">{p.category}</td>
-                    <td className="p-4">{p.active?'Sim':'Não'}</td>
-                    <td className="p-4 flex gap-2">
-                      <button onClick={()=>navigate('admin/product/edit',{id:p.id})} className="bg-green-600 text-white px-3 py-1 rounded-md text-sm font-semibold">Editar</button>
-                      <button onClick={()=>remove(p.id)} className="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-semibold">Excluir</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )
-    };
-
-    const AdminProductEditPage = ()=>{
-      const { navigate, route } = useApp();
-      const id = route.params?.id;
-      const [product,setProduct]=useState(null);
-      const [loading,setLoading]=useState(true);
-      const [imagePreview,setImagePreview]=useState(null);
-      const fileRef = useRef(null);
-      const [categories,setCategories]=useState([]);
-
-      useEffect(()=>{
-        (async ()=>{
-          const s = await (await fetch('/api/settings')).json();
-          setCategories(s.categoriesOrder||[]);
-          if (id){
-            const p = await api.getProduct(id);
-            setProduct(p); if (p.imageUrl) setImagePreview(p.imageUrl);
-          }else{
-            setProduct({ name:'', category: (s.categoriesOrder||[])[0]||'', active:true });
-          }
-          setLoading(false);
-        })();
-      },[id]);
 
       const change = (e)=>{
         const { name, value, type, checked } = e.target;
@@ -1154,13 +584,11 @@
 
     ReactDOM.render(<AppProvider><Header/><main><App/></main></AppProvider>, document.getElementById('root'));
 
-    // Service worker auto-clean & register
     if ('serviceWorker' in navigator){
       window.addEventListener('load', async ()=>{
         try{
           const regs = await navigator.serviceWorker.getRegistrations();
           regs.forEach(r=>{
-            // keep only current scope sw.js
             if (!r.active || (r.active && !r.active.scriptURL.endsWith('/sw.js'))) r.unregister();
           });
           await navigator.serviceWorker.register('/sw.js');
@@ -1169,4 +597,4 @@
     }
   </script>
 </body>
-</html>-->
+</html>
