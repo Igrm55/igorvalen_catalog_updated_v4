@@ -217,6 +217,7 @@
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
+      const [sortAsc, setSortAsc] = useState(true);
       const [showTop, setShowTop] = useState(false);
       const [selectedProduct, setSelectedProduct] = useState(null);
       const contentRef = useRef(null);
@@ -262,8 +263,11 @@
       const order = catalog.settings.categoriesOrder || [];
       const grouped = (activeCategory? [activeCategory] : order).map(c => ({
         category: c,
-        products: catalog.products.filter(p => p.category === c)
+        products: catalog.products
+          .filter(p => p.category === c)
+          .sort((a,b)=> sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name))
       })).filter(g=>g.products.length>0);
+      const total = grouped.reduce((sum, g) => sum + g.products.length, 0);
 
       return (
         <>
@@ -301,6 +305,9 @@
                 ))}
               </div>
               <div className="flex items-center gap-4">
+                <button onClick={()=>setSortAsc(v=>!v)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+                  {sortAsc ? 'A-Z' : 'Z-A'}
+                </button>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
                   <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
@@ -315,13 +322,13 @@
                 placeholder="Buscar por nome, categoria ou código..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-4 pr-48 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-4 pr-64 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               {query && (
                 <button
                   type="button"
                   onClick={()=>{ setQuery(''); loadCatalog('', activeCategory); }}
-                  className="absolute top-1/2 right-24 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
+                  className="absolute top-1/2 right-40 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
                 >
                   Limpar
                 </button>
@@ -334,6 +341,10 @@
               </button>
             </form>
           </div>
+
+          {!loading && total > 0 && (
+            <p className="text-white font-semibold mb-4 text-center">{total} produto(s) encontrado(s)</p>
+          )}
 
           {loading ? (
             <div className="text-center text-white text-2xl font-bold py-10">Carregando...</div>
