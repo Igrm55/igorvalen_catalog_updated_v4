@@ -15,16 +15,18 @@ app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-// Static: disable HTML caching to avoid stale SW/JS
+// Evitar cache do HTML principal (ajuda contra SW/asset antigo)
 app.use((req,res,next)=>{
   if (req.path === '/' || req.path === '/index.html'){
     res.set('Cache-Control','no-store')
   }
   next()
 })
+
+// Arquivos estáticos
 app.use(express.static(path.join(__dirname,'..','public')))
 
-// Multer storage for images
+// Multer (upload de imagens)
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req,file,cb)=> cb(null, uploadDir),
@@ -40,11 +42,12 @@ const upload = multer({
 function normalizeNumber(val){
   if (val===undefined || val===null || val==='') return null
   if (typeof val === 'number') return val
-  // Accept "4,70" or "4.70"
-  const s = String(val).replace('.','').replace(',','.')
+  // Aceita "4,70" ou "4.70"
+  const s = String(val).replace('.', '').replace(',', '.')
   const f = parseFloat(s)
   return isNaN(f) ? null : f
 }
+
 async function getSettings(){
   const s = await prisma.settings.findUnique({ where:{ id:1 } })
   const order = s?.categoriesOrder ? s.categoriesOrder.split('|') : []
@@ -170,16 +173,17 @@ app.post('/api/products/reorder', async (req,res)=>{
   }
 })
 
-// Settings endpoint (if ever needed)
+// Settings endpoint
 app.get('/api/settings', async (req,res)=>{
   res.json(await getSettings())
 })
 
-// Fallback to index.html
+// Fallback SPA
 app.get('*', (req,res)=>{
   res.sendFile(path.join(__dirname,'..','public','index.html'))
 })
 
-app.listen(PORT, ()=>{
+// Bind 0.0.0.0 para plataformas de deploy
+app.listen(PORT, '0.0.0.0', ()=>{
   console.log(`Servidor rodando em http://localhost:${PORT}`)
 })

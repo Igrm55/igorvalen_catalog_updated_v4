@@ -139,16 +139,19 @@
       )
     };
 
-    // *** ProductCard com layout de preços atualizado ***
+    /* Card de produto (abre modal ao clicar) */
     const ProductCard = ({product, priceMode, showPrices, onSelect})=>{
       return (
-        <div onClick={() => onSelect && onSelect(product)} className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
-          <div className="bg-white relative h-64 flex items-center justify-center">
+        <div
+          onClick={() => onSelect && onSelect(product)}
+          className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
+        >
+          <div className="bg-white relative h-64">
             <img
               loading="lazy"
               src={product.imageUrl || '/img/placeholder.png'}
               alt={product.name}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           </div>
           <div className="p-4 flex-grow flex flex-col">
@@ -202,7 +205,7 @@
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-4 max-w-md w-full relative">
             <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-gray-800">✕</button>
-            <img src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-64 object-contain rounded-xl mb-4" />
+            <img src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-64 object-cover rounded-xl mb-4" />
             <h2 className="text-2xl font-bold mb-2" style={{color:'var(--brand-green)'}}>{product.name}</h2>
             <p className="text-sm text-gray-600 mb-1">Código(s): {product.codes || '-'}</p>
             <p className="text-sm text-gray-600 mb-4">Sabores: {product.flavors || '-'}</p>
@@ -265,9 +268,9 @@
       }, []);
 
       const handleSearchSubmit = (e) => {
-          e.preventDefault();
-          setActiveCategory(null);
-          loadCatalog(query, null);
+        e.preventDefault();
+        setActiveCategory(null);
+        loadCatalog(query, null);
       };
       
       const handleCategoryClick = (category) => {
@@ -399,6 +402,7 @@
             </>
           )}
         </div>
+
         {showTop && (
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -408,7 +412,13 @@
             ↑
           </button>
         )}
-        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} priceMode={priceMode} showPrices={showPrices} />
+
+        <ProductModal
+          product={selectedProduct}
+          onClose={()=>setSelectedProduct(null)}
+          priceMode={priceMode}
+          showPrices={showPrices}
+        />
         </>
       )
     };
@@ -435,7 +445,7 @@
       )
     };
 
-    // *** SOLUÇÃO PROFISSIONAL: AdminProductListPage com layout de cards para mobile ***
+    // Admin: lista (tabela desktop + cards mobile)
     const AdminProductListPage = ()=>{
       const { navigate } = useApp();
       const [products,setProducts]=useState([]);
@@ -447,7 +457,7 @@
       }
       useEffect(()=>{ load() },[]);
       useEffect(()=>{
-        if (ref.current && !loading && window.innerWidth >= 768){ // Sortable only on desktop
+        if (ref.current && !loading && window.innerWidth >= 768){ // Sortable apenas desktop
           new Sortable(ref.current, {
             animation:150,
             handle: '.handle',
@@ -475,7 +485,7 @@
             <button onClick={()=>navigate('admin/product/new')} className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">Adicionar</button>
           </div>
           
-          {/* Layout de Tabela para Telas Médias e Maiores */}
+          {/* Tabela (md+) */}
           <div className="panel p-4 hidden md:block">
             <table className="w-full">
               <thead><tr className="border-b-2 border-gray-200">
@@ -514,7 +524,7 @@
             </table>
           </div>
 
-          {/* Layout de Cards para Telas Pequenas */}
+          {/* Cards (mobile) */}
           <div className="md:hidden space-y-4">
             {loading ? <div className="text-center text-white">Carregando...</div> : 
               products.map(p => (
