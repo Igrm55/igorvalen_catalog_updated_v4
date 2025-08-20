@@ -139,7 +139,7 @@
       )
     };
 
-    // *** Card de produto (abre modal ao clicar) ***
+    /* Card de produto (abre modal ao clicar) */
     const ProductCard = ({product, priceMode, showPrices, onSelect})=>{
       return (
         <div
@@ -445,7 +445,7 @@
       )
     };
 
-    // *** Admin: lista de produtos (tabela desktop + cards mobile) ***
+    // Admin: lista (tabela desktop + cards mobile)
     const AdminProductListPage = ()=>{
       const { navigate } = useApp();
       const [products,setProducts]=useState([]);
@@ -457,7 +457,7 @@
       }
       useEffect(()=>{ load() },[]);
       useEffect(()=>{
-        if (ref.current && !loading && window.innerWidth >= 768){ // Sortable only on desktop
+        if (ref.current && !loading && window.innerWidth >= 768){ // Sortable apenas desktop
           new Sortable(ref.current, {
             animation:150,
             handle: '.handle',
@@ -485,7 +485,7 @@
             <button onClick={()=>navigate('admin/product/new')} className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">Adicionar</button>
           </div>
           
-          {/* Layout de Tabela para Telas Médias e Maiores */}
+          {/* Tabela (md+) */}
           <div className="panel p-4 hidden md:block">
             <table className="w-full">
               <thead><tr className="border-b-2 border-gray-200">
@@ -524,7 +524,7 @@
             </table>
           </div>
 
-          {/* Layout de Cards para Telas Pequenas */}
+          {/* Cards (mobile) */}
           <div className="md:hidden space-y-4">
             {loading ? <div className="text-center text-white">Carregando...</div> : 
               products.map(p => (
