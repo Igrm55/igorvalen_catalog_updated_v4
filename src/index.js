@@ -40,9 +40,10 @@ const upload = multer({
 function normalizeNumber(val){
   if (val===undefined || val===null || val==='') return null
   if (typeof val === 'number') return val
-  // Accept "4,70" or "4.70"
-  const s = String(val).replace('.','').replace(',','.')
-  const f = parseFloat(s)
+  // Accept "4,70" or "4.70". If comma is present, treat dots as thousand separators.
+  const s = String(val).trim()
+  const normalized = s.includes(',') ? s.replace(/\./g,'').replace(',', '.') : s
+  const f = parseFloat(normalized)
   return isNaN(f) ? null : f
 }
 async function getSettings(){

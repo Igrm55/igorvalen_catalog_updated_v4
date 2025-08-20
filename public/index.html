@@ -532,14 +532,20 @@
         }
       }
       const save = async ()=>{
-        const fd = new FormData();
-        Object.entries(product).forEach(([k,v])=>{
-          if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
-          fd.append(k, v);
-        });
-        if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
-        if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
-        navigate('admin/products');
+        try {
+          const fd = new FormData();
+          Object.entries(product).forEach(([k,v])=>{
+            if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
+            fd.append(k, v);
+          });
+          if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
+          const res = id ? await api.updateProduct(id, fd) : await api.createProduct(fd);
+          if (res.error) throw new Error(res.error);
+          navigate('admin/products');
+        } catch(err) {
+          console.error(err);
+          alert('Erro ao salvar produto');
+        }
       }
 
       if (loading) return <div className="text-center text-white text-2xl font-bold pt-20">Carregando...</div>;
