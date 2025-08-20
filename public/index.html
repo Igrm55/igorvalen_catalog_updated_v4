@@ -70,6 +70,10 @@
       getCatalog: async (q)=>{
         const params = new URLSearchParams(q||{}).toString();
         const res = await fetch('/api/catalog'+(params?'?'+params:''))
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Erro ao carregar catálogo')
+        }
         return res.json()
       },
       getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
@@ -139,8 +143,13 @@
     const ProductCard = ({product, showPrices})=>{
       return (
         <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-          <div className="bg-white p-2 relative h-48">
-            <img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
+          <div className="bg-white relative h-64">
+            <img
+              loading="lazy"
+              src={product.imageUrl || '/img/placeholder.png'}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="p-4 flex-grow flex flex-col">
             <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
@@ -194,6 +203,7 @@
           setCatalog(data);
         } catch (error) {
           console.error("Falha ao carregar o catálogo:", error);
+          setCatalog({ products: [], settings: { categoriesOrder: [] } });
         } finally {
           setLoading(false);
         }
