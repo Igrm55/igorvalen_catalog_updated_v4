@@ -234,9 +234,9 @@
       const [activeCategory, setActiveCategory] = useState(null);
       const [priceMode, setPriceMode] = useState(()=> localStorage.getItem('priceMode') || 'both');
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
-      const [sortMode, setSortMode] = useState('nameAsc');
       const [selectedProduct, setSelectedProduct] = useState(null);
       const contentRef = useRef(null);
+      const searchRef = useRef(null);
 
       const loadCatalog = async (searchQuery, category) => {
         setLoading(true);
@@ -255,6 +255,8 @@
         loadCatalog('', null);
       }, []);
 
+      useEffect(()=>{ searchRef.current?.focus(); }, []);
+
       useEffect(()=>{ localStorage.setItem('priceMode', priceMode) }, [priceMode]);
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
 
@@ -272,23 +274,12 @@
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
-      const sortProducts = (list)=>{
-        switch(sortMode){
-          case 'nameDesc':
-            return [...list].sort((a,b)=> b.name.localeCompare(a.name));
-          case 'priceAsc':
-            return [...list].sort((a,b)=> Number(a.priceUV||0) - Number(b.priceUV||0));
-          case 'priceDesc':
-            return [...list].sort((a,b)=> Number(b.priceUV||0) - Number(a.priceUV||0));
-          default:
-            return [...list].sort((a,b)=> a.name.localeCompare(b.name));
-        }
-      };
-
       const order = catalog.settings.categoriesOrder || [];
       const grouped = (activeCategory? [activeCategory] : order).map(c => ({
         category: c,
-        products: sortProducts(catalog.products.filter(p => p.category === c))
+        products: catalog.products
+          .filter(p => p.category === c)
+          .sort((a,b)=> a.name.localeCompare(b.name))
       })).filter(g=>g.products.length>0);
 
       return (
@@ -322,7 +313,7 @@
             <img loading="lazy" src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
           </div>
 
-          <div ref={contentRef} className="panel p-6 mb-8">
+          <div ref={contentRef} className="panel p-6 mb-8 sticky top-0 z-10">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
@@ -342,16 +333,11 @@
                     <option value="prazo">Preços: a prazo</option>
                   </select>
                 )}
-                <select value={sortMode} onChange={e=>setSortMode(e.target.value)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
-                  <option value="nameAsc">Ordenar: A-Z</option>
-                  <option value="nameDesc">Ordenar: Z-A</option>
-                  <option value="priceAsc">Preço: menor</option>
-                  <option value="priceDesc">Preço: maior</option>
-                </select>
               </div>
             </div>
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
+                ref={searchRef}
                 type="text"
                 placeholder="Buscar por nome, categoria ou código..."
                 value={query}
