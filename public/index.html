@@ -148,7 +148,7 @@
     };
 
     // *** ProductCard com layout de preços atualizado ***
-    const ProductCard = ({product, showPrices, onSelect, cartEnabled})=>{
+    const ProductCard = ({product, priceMode, onSelect, cartEnabled})=>{
       return (
         <div onClick={() => onSelect && onSelect(product)} className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
           <div className="bg-white relative h-64">
@@ -159,39 +159,47 @@
               className="w-full h-full object-cover"
             />
             {cartEnabled && (
-              <button onClick={(e)=>{e.stopPropagation(); onSelect && onSelect(product);}} className="absolute top-2 right-2 bg-gradient-to-r from-green-600 to-red-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">+ ver</button>
+              <button onClick={(e)=>{e.stopPropagation(); onSelect && onSelect(product);}} className="absolute top-2 right-2 bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg text-xl">+</button>
             )}
           </div>
           <div className="p-4 flex-grow flex flex-col">
             <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
             <p className="text-xs text-gray-500 mt-1">Código(s): {product.codes || "-"}</p>
             <p className="text-sm font-semibold mb-3" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-700">{product.flavors || '-'}</span></p>
-            {showPrices && (
+            {priceMode && (
               <div className="mt-auto pt-3 border-t space-y-2">
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Unidade à vista</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Pacote à vista</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Unidade a prazo</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Pacote a prazo</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
-                  </div>
-                </div>
+                {(priceMode === 'avista' || priceMode === 'both') && (
+                  <>
+                    <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Unidade à vista</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Pacote à vista</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {(priceMode === 'prazo' || priceMode === 'both') && (
+                  <>
+                    <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Unidade a prazo</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Pacote a prazo</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -199,13 +207,17 @@
       )
     };
 
-    const ProductModal = ({product, onClose, showPrices, cartEnabled, onAdd}) => {
+    const ProductModal = ({product, onClose, priceMode, cartEnabled, onAdd}) => {
       const [type,setType] = useState('unidade');
       const [payment,setPayment] = useState('avista');
       const [qty,setQty] = useState(1);
+      const flavors = product?.flavors ? product.flavors.split(',').map(f=>f.trim()) : [];
+      const [flavor,setFlavor] = useState(flavors[0] || '');
+      useEffect(()=>{ setFlavor(flavors[0] || ''); }, [product]);
       if (!product) return null;
       const add = ()=>{
-        onAdd && onAdd(type,payment,qty);
+        const pay = priceMode === 'both' ? payment : priceMode;
+        onAdd && onAdd(type,pay,flavor,qty);
       };
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -215,28 +227,43 @@
             <h2 className="text-2xl font-bold mb-2" style={{color:'var(--brand-green)'}}>{product.name}</h2>
             <p className="text-sm text-gray-600 mb-1">Código(s): {product.codes || '-'}</p>
             <p className="text-sm text-gray-600 mb-4">Sabores: {product.flavors || '-'}</p>
-            {showPrices && (
+            {priceMode && (
               <div className="space-y-2">
-                <div className="flex justify-between"><span className="font-semibold">Unidade à vista</span><span>R$ {Number(product.priceUV || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="font-semibold">Pacote à vista</span><span>R$ {Number(product.priceFV || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="font-semibold">Unidade a prazo</span><span>R$ {Number(product.priceUP || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="font-semibold">Pacote a prazo</span><span>R$ {Number(product.priceFP || 0).toFixed(2)}</span></div>
+                {(priceMode === 'avista' || priceMode === 'both') && (
+                  <>
+                    <div className="flex justify-between"><span className="font-semibold">Unidade à vista</span><span>R$ {Number(product.priceUV || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Pacote à vista</span><span>R$ {Number(product.priceFV || 0).toFixed(2)}</span></div>
+                  </>
+                )}
+                {(priceMode === 'prazo' || priceMode === 'both') && (
+                  <>
+                    <div className="flex justify-between"><span className="font-semibold">Unidade a prazo</span><span>R$ {Number(product.priceUP || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Pacote a prazo</span><span>R$ {Number(product.priceFP || 0).toFixed(2)}</span></div>
+                  </>
+                )}
               </div>
             )}
             {cartEnabled && (
               <div className="mt-4 space-y-2">
+                {flavors.length > 0 && (
+                  <select value={flavor} onChange={e=>setFlavor(e.target.value)} className="w-full border p-2 rounded-full">
+                    {flavors.map(f=> <option key={f} value={f}>{f}</option>)}
+                  </select>
+                )}
                 <div className="flex gap-2">
-                  <select value={type} onChange={e=>setType(e.target.value)} className="flex-1 border p-2 rounded">
+                  <select value={type} onChange={e=>setType(e.target.value)} className="flex-1 border p-2 rounded-full">
                     <option value="unidade">Unidade</option>
                     <option value="pacote">Pacote</option>
                   </select>
-                  <select value={payment} onChange={e=>setPayment(e.target.value)} className="flex-1 border p-2 rounded">
-                    <option value="avista">À vista</option>
-                    <option value="prazo">A prazo</option>
-                  </select>
+                  {priceMode === 'both' && (
+                    <select value={payment} onChange={e=>setPayment(e.target.value)} className="flex-1 border p-2 rounded-full">
+                      <option value="avista">À vista</option>
+                      <option value="prazo">A prazo</option>
+                    </select>
+                  )}
                 </div>
-                <input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)} className="w-full border p-2 rounded" />
-                <button onClick={()=>{add(); onClose();}} className="w-full bg-green-600 text-white py-2 rounded-lg">Adicionar ao carrinho</button>
+                <input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)} className="w-full border p-2 rounded-full" />
+                <button onClick={()=>{add(); onClose();}} className="w-full bg-green-600 text-white py-2 rounded-full">Adicionar ao carrinho</button>
               </div>
             )}
           </div>
@@ -244,12 +271,12 @@
       );
     };
 
-    const CartModal = ({open, items, onClose, onClear, onUpdate, onRemove}) => {
+    const CartModal = ({open, items, onClose, onClear, onUpdate, onRemove, priceMode}) => {
       const [finalized, setFinalized] = useState(false);
       const ref = useRef(null);
       if (!open) return null;
       const total = items.reduce((s,i)=> s + i.unitPrice * i.quantity, 0);
-      const summary = items.map(i=> `${i.quantity} ${i.type} de ${i.product.name} (${i.payment})`).join(', ');
+      const summary = items.map(i=> `${i.quantity} ${i.type} de ${i.product.name}${i.flavor?` (${i.flavor})`:''}${priceMode==='both'?` (${i.payment})`:''}`).join(', ');
       const saveImage = async ()=>{
         if (!window.html2canvas) return;
         const canvas = await html2canvas(ref.current);
@@ -260,9 +287,9 @@
       };
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div ref={ref} className="bg-white rounded-2xl p-4 max-w-md w-full relative">
+          <div ref={ref} className="bg-yellow-50 rounded-2xl p-4 max-w-md w-full relative">
             <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-gray-800">✕</button>
-            <h2 className="text-xl font-bold mb-4" style={{color:'var(--brand-green)'}}>Carrinho</h2>
+            <h2 className="text-xl font-bold mb-4 text-yellow-600">Carrinho</h2>
             {items.length === 0 ? (
               <p className="text-gray-600">Nenhum item adicionado.</p>
             ) : (
@@ -272,7 +299,7 @@
                     <li key={idx} className="flex items-center justify-between text-sm">
                       <div className="flex-1">
                         <span className="font-semibold">{it.product.name}</span><br/>
-                        <span className="text-gray-600">{it.quantity}x {it.type} ({it.payment})</span>
+                        <span className="text-gray-600">{it.quantity}x {it.type}{it.flavor?` (${it.flavor})`:''}{priceMode==='both'?` (${it.payment})`:''}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="number" min="1" value={it.quantity} onChange={e=>onUpdate(idx, Number(e.target.value))} className="w-16 border rounded-full px-2 py-1 text-center" />
@@ -308,7 +335,7 @@
       const [loading, setLoading] = useState(true);
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
-      const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
+      const [priceMode, setPriceMode] = useState(()=> localStorage.getItem('priceMode') || 'both');
       const [sortMode, setSortMode] = useState('name-asc');
       const [showTop, setShowTop] = useState(false);
       const [selectedProduct, setSelectedProduct] = useState(null);
@@ -335,7 +362,7 @@
         loadCatalog('', null);
       }, []);
 
-      useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
+      useEffect(()=>{ localStorage.setItem('priceMode', priceMode) }, [priceMode]);
 
       useEffect(() => {
         const onScroll = () => setShowTop(window.scrollY > 300);
@@ -356,7 +383,7 @@
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
-      const addToCart = (product, type, payment, quantity) => {
+      const addToCart = (product, type, payment, flavor, quantity) => {
         const key = `${type}-${payment}`;
         const unitPrice = {
           'unidade-avista': Number(product.priceUV || 0),
@@ -364,7 +391,7 @@
           'pacote-avista': Number(product.priceFV || 0),
           'pacote-prazo': Number(product.priceFP || 0)
         }[key] || 0;
-        setCartItems(items => [...items, { product, type, payment, quantity: Number(quantity), unitPrice }]);
+        setCartItems(items => [...items, { product, type, payment, flavor, quantity: Number(quantity), unitPrice }]);
         setCartOpen(true);
       };
 
@@ -437,12 +464,11 @@
                   <option value="price-desc">Preço ↓</option>
                 </select>
                 <button onClick={()=>setCartEnabled(v=>!v)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">{cartEnabled ? 'Desativar carrinho' : 'Ativar carrinho'}</button>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
-                  <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
-                    <div className="knob"></div>
-                  </div>
-                </div>
+                <select value={priceMode} onChange={e=>setPriceMode(e.target.value)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+                  <option value="both">Preços: ambos</option>
+                  <option value="avista">Preços: à vista</option>
+                  <option value="prazo">Preços: a prazo</option>
+                </select>
               </div>
             </div>
             <form onSubmit={handleSearchSubmit} className="relative">
@@ -490,7 +516,7 @@
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
                     <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
-                      {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices} onSelect={setSelectedProduct} cartEnabled={cartEnabled}/>)}
+                      {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} onSelect={setSelectedProduct} cartEnabled={cartEnabled}/>)}
                     </div>
                   </div>
                 </>
@@ -515,13 +541,13 @@
           </button>
         )}
         {cartEnabled && (
-          <button onClick={()=>setCartOpen(true)} className="fixed bottom-6 left-6 flex items-center gap-2 bg-gradient-to-r from-green-600 to-red-600 text-white px-4 py-3 rounded-full shadow-lg hover:from-green-700 hover:to-red-700 transition-colors" aria-label="Ver carrinho">
+          <button onClick={()=>setCartOpen(true)} className="fixed bottom-6 left-6 flex items-center gap-2 bg-yellow-400 text-gray-800 px-4 py-3 rounded-full shadow-lg hover:bg-yellow-500 transition-colors" aria-label="Ver carrinho">
             <CartIcon />
             <span className="font-semibold">{cartItems.length} • R$ {cartTotal.toFixed(2)}</span>
           </button>
         )}
-        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} showPrices={showPrices} cartEnabled={cartEnabled} onAdd={(type,payment,qty)=>addToCart(selectedProduct,type,payment,qty)} />
-        <CartModal open={cartOpen} items={cartItems} onClose={()=>setCartOpen(false)} onClear={()=>setCartItems([])} onUpdate={updateCartItem} onRemove={removeCartItem} />
+        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} priceMode={priceMode} cartEnabled={cartEnabled} onAdd={(type,payment,flavor,qty)=>addToCart(selectedProduct,type,payment,flavor,qty)} />
+        <CartModal open={cartOpen} items={cartItems} priceMode={priceMode} onClose={()=>setCartOpen(false)} onClear={()=>setCartItems([])} onUpdate={updateCartItem} onRemove={removeCartItem} />
         </>
       )
     };
@@ -668,6 +694,7 @@
       const [imagePreview,setImagePreview]=useState(null);
       const fileRef = useRef(null);
       const [categories,setCategories]=useState([]);
+      const [flavors,setFlavors]=useState(['']);
 
       useEffect(() => {
         (async () => {
@@ -681,18 +708,23 @@
                 if (p && !p.error) {
                   setProduct(p);
                   if (p.imageUrl) setImagePreview(p.imageUrl);
+                  const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
+                  setFlavors(fl);
                 } else {
                   setProduct({ name: '', category: cats[0] || '', active: true });
+                  setFlavors(['']);
                 }
               } catch (err) {
                 setProduct({ name: '', category: cats[0] || '', active: true });
               }
             } else {
               setProduct({ name: '', category: cats[0] || '', active: true });
+              setFlavors(['']);
             }
           } catch (err) {
             console.error(err);
             setProduct({ name: '', category: '', active: true });
+            setFlavors(['']);
           }
           setLoading(false);
         })();
@@ -701,6 +733,9 @@
       const change = (e)=>{
         const { name, value, type, checked } = e.target;
         setProduct(p=>({...p, [name]: (type==='checkbox'? checked : value)}));
+      }
+      const changeFlavor = (idx,val)=>{
+        setFlavors(f=>f.map((s,i)=> i===idx? val : s));
       }
       const onImage = (e)=>{
         if (e.target.files && e.target.files[0]){
@@ -711,9 +746,12 @@
       const save = async ()=>{
         const fd = new FormData();
         Object.entries(product).forEach(([k,v])=>{
+          if (k==='flavors') return;
           if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
           fd.append(k, v);
         });
+        const flStr = flavors.map(f=>f.trim()).filter(Boolean).join(', ');
+        if (flStr) fd.append('flavors', flStr);
         if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
         if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
         navigate('admin/products');
@@ -738,7 +776,16 @@
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div><label className="block font-semibold mb-1">Códigos</label><input name="codes" value={product.codes||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  <div><label className="block font-semibold mb-1">Sabores/Disponibilidade</label><input name="flavors" value={product.flavors||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
+                  <div>
+                    <label className="block font-semibold mb-1">Sabores/Disponibilidade</label>
+                    {flavors.map((fl,idx)=>(
+                      <div key={idx} className="flex items-center gap-2 mb-2">
+                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg"/>
+                        {flavors.length>1 && <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="px-3 py-1 bg-red-500 text-white rounded-full">✕</button>}
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>setFlavors(f=>[...f,''])} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+ sabor</button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-4">
