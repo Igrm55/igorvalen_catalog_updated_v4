@@ -188,8 +188,14 @@
       )
     };
 
-    const ProductModal = ({product, onClose, showPrices}) => {
+    const ProductModal = ({product, onClose, showPrices, cartEnabled, onAdd}) => {
+      const [type,setType] = useState('unidade');
+      const [payment,setPayment] = useState('avista');
+      const [qty,setQty] = useState(1);
       if (!product) return null;
+      const add = ()=>{
+        onAdd && onAdd(type,payment,qty);
+      };
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-4 max-w-md w-full relative">
@@ -206,6 +212,61 @@
                 <div className="flex justify-between"><span className="font-semibold">Pacote a prazo</span><span>R$ {Number(product.priceFP || 0).toFixed(2)}</span></div>
               </div>
             )}
+            {cartEnabled && (
+              <div className="mt-4 space-y-2">
+                <div className="flex gap-2">
+                  <select value={type} onChange={e=>setType(e.target.value)} className="flex-1 border p-2 rounded">
+                    <option value="unidade">Unidade</option>
+                    <option value="pacote">Pacote</option>
+                  </select>
+                  <select value={payment} onChange={e=>setPayment(e.target.value)} className="flex-1 border p-2 rounded">
+                    <option value="avista">À vista</option>
+                    <option value="prazo">A prazo</option>
+                  </select>
+                </div>
+                <input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)} className="w-full border p-2 rounded" />
+                <button onClick={()=>{add(); onClose();}} className="w-full bg-green-600 text-white py-2 rounded-lg">Adicionar ao carrinho</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const CartModal = ({open, items, onClose, onClear}) => {
+      const [finalized, setFinalized] = useState(false);
+      if (!open) return null;
+      const total = items.reduce((s,i)=> s + i.unitPrice * i.quantity, 0);
+      const summary = items.map(i=> `${i.quantity} ${i.type} de ${i.product.name} (${i.payment})`).join(', ');
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-4 max-w-md w-full relative">
+            <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-gray-800">✕</button>
+            <h2 className="text-xl font-bold mb-4">Carrinho</h2>
+            {items.length === 0 ? (
+              <p className="text-gray-600">Nenhum item adicionado.</p>
+            ) : (
+              <>
+                <ul className="mb-4 space-y-2 max-h-60 overflow-auto">
+                  {items.map((it,idx)=>(
+                    <li key={idx} className="flex justify-between text-sm">
+                      <span>{it.quantity}x {it.product.name} ({it.type}, {it.payment})</span>
+                      <span>R$ {(it.unitPrice*it.quantity).toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="font-bold mb-4">Total: R$ {total.toFixed(2)}</p>
+                {!finalized ? (
+                  <button onClick={()=>setFinalized(true)} className="w-full bg-green-600 text-white py-2 rounded-lg mb-2">Gerar nota</button>
+                ) : (
+                  <>
+                    <p className="text-sm mb-2">Seu pedido inclui: {summary}. Valor total R$ {total.toFixed(2)}.</p>
+                    <button onClick={()=>window.print()} className="w-full bg-blue-600 text-white py-2 rounded-lg mb-2">Salvar pedido</button>
+                  </>
+                )}
+                <button onClick={onClear} className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg">Limpar carrinho</button>
+              </>
+            )}
           </div>
         </div>
       );
@@ -220,7 +281,9 @@
       const [sortMode, setSortMode] = useState('name-asc');
       const [showTop, setShowTop] = useState(false);
       const [selectedProduct, setSelectedProduct] = useState(null);
-      const [largeView, setLargeView] = useState(false);
+      const [cartEnabled, setCartEnabled] = useState(false);
+      const [cartItems, setCartItems] = useState([]);
+      const [cartOpen, setCartOpen] = useState(false);
       const contentRef = useRef(null);
 
       const loadCatalog = async (searchQuery, category) => {
@@ -259,6 +322,18 @@
         setQuery('');
         loadCatalog('', category);
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      const addToCart = (product, type, payment, quantity) => {
+        const key = `${type}-${payment}`;
+        const unitPrice = {
+          'unidade-avista': Number(product.priceUV || 0),
+          'unidade-prazo': Number(product.priceUP || 0),
+          'pacote-avista': Number(product.priceFV || 0),
+          'pacote-prazo': Number(product.priceFP || 0)
+        }[key] || 0;
+        setCartItems(items => [...items, { product, type, payment, quantity: Number(quantity), unitPrice }]);
+        setCartOpen(true);
       };
 
       const order = catalog.settings.categoriesOrder || [];
@@ -322,7 +397,7 @@
                   <option value="price-asc">Preço ↑</option>
                   <option value="price-desc">Preço ↓</option>
                 </select>
-                <button onClick={()=>setLargeView(v=>!v)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">{largeView ? 'Visão padrão' : 'Visão grande'}</button>
+                <button onClick={()=>setCartEnabled(v=>!v)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">{cartEnabled ? 'Desativar carrinho' : 'Ativar carrinho'}</button>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
                   <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
@@ -375,7 +450,7 @@
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className={`grid ${largeView ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-4 sm:gap-6`}>
+                    <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
                       {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
                     </div>
                   </div>
@@ -400,7 +475,13 @@
             ↑
           </button>
         )}
-        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} showPrices={showPrices}/>
+        {cartEnabled && (
+          <button onClick={()=>setCartOpen(true)} className="fixed bottom-6 left-6 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors" aria-label="Ver carrinho">
+            🛒 {cartItems.length}
+          </button>
+        )}
+        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} showPrices={showPrices} cartEnabled={cartEnabled} onAdd={(type,payment,qty)=>addToCart(selectedProduct,type,payment,qty)} />
+        <CartModal open={cartOpen} items={cartItems} onClose={()=>setCartOpen(false)} onClear={()=>setCartItems([])} />
         </>
       )
     };
