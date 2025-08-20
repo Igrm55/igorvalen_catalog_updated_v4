@@ -217,7 +217,7 @@
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
-      const [sortAsc, setSortAsc] = useState(true);
+      const [sortMode, setSortMode] = useState('name-asc');
       const [showTop, setShowTop] = useState(false);
       const [selectedProduct, setSelectedProduct] = useState(null);
       const contentRef = useRef(null);
@@ -265,9 +265,19 @@
         category: c,
         products: catalog.products
           .filter(p => p.category === c)
-          .sort((a,b)=> sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name))
+          .sort((a,b)=>{
+            switch(sortMode){
+              case 'name-desc':
+                return b.name.localeCompare(a.name);
+              case 'price-asc':
+                return Number(a.priceUV || 0) - Number(b.priceUV || 0);
+              case 'price-desc':
+                return Number(b.priceUV || 0) - Number(a.priceUV || 0);
+              default:
+                return a.name.localeCompare(b.name);
+            }
+          })
       })).filter(g=>g.products.length>0);
-      const total = grouped.reduce((sum, g) => sum + g.products.length, 0);
 
       return (
         <>
@@ -305,9 +315,13 @@
                 ))}
               </div>
               <div className="flex items-center gap-4">
-                <button onClick={()=>setSortAsc(v=>!v)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
-                  {sortAsc ? 'A-Z' : 'Z-A'}
-                </button>
+                <select value={sortMode} onChange={e=>setSortMode(e.target.value)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+                  <option value="name-asc">Nome A-Z</option>
+                  <option value="name-desc">Nome Z-A</option>
+                  <option value="price-asc">Preço ↑</option>
+                  <option value="price-desc">Preço ↓</option>
+                </select>
+                <button onClick={()=>window.print()} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">Imprimir</button>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
                   <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
@@ -341,10 +355,6 @@
               </button>
             </form>
           </div>
-
-          {!loading && total > 0 && (
-            <p className="text-white font-semibold mb-4 text-center">{total} produto(s) encontrado(s)</p>
-          )}
 
           {loading ? (
             <div className="text-center text-white text-2xl font-bold py-10">Carregando...</div>
