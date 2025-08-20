@@ -1,4 +1,5 @@
 const path = require('path')
+const fs = require('fs')
 const express = require('express')
 const cors = require('cors')
 const multer = require('multer')
@@ -7,6 +8,8 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const app = express()
 const PORT = process.env.PORT || 4000
+const uploadDir = path.join(__dirname, '..', 'public', 'uploads')
+fs.mkdirSync(uploadDir, { recursive: true })
 
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
@@ -24,7 +27,7 @@ app.use(express.static(path.join(__dirname,'..','public')))
 // Multer storage for images
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req,file,cb)=> cb(null, path.join(__dirname,'..','public','uploads')),
+    destination: (req,file,cb)=> cb(null, uploadDir),
     filename: (req,file,cb)=> {
       const ts = Date.now()
       const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g,'_')
@@ -56,9 +59,9 @@ app.get('/api/catalog', async (req,res)=>{
     if (category) where.category = category
     if (q){
       where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { codes: { contains: q, mode: 'insensitive' } },
-        { category: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { codes: { contains: q } },
+        { category: { contains: q } },
       ]
     }
     const [products, settings] = await Promise.all([

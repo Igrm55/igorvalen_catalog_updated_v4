@@ -70,6 +70,10 @@
       getCatalog: async (q)=>{
         const params = new URLSearchParams(q||{}).toString();
         const res = await fetch('/api/catalog'+(params?'?'+params:''))
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Erro ao carregar catálogo')
+        }
         return res.json()
       },
       getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
@@ -136,11 +140,16 @@
     };
 
     // *** ProductCard com layout de preços atualizado ***
-    const ProductCard = ({product, showPrices})=>{
+    const ProductCard = ({product, priceMode, showPrices, onSelect})=>{
       return (
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-          <div className="bg-white p-2 relative h-48">
-            <img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
+        <div onClick={() => onSelect && onSelect(product)} className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
+          <div className="bg-white relative h-64 flex items-center justify-center">
+            <img
+              loading="lazy"
+              src={product.imageUrl || '/img/placeholder.png'}
+              alt={product.name}
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="p-4 flex-grow flex flex-col">
             <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
@@ -148,30 +157,38 @@
             <p className="text-sm font-semibold mb-3" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-700">{product.flavors || '-'}</span></p>
             {showPrices && (
               <div className="mt-auto pt-3 border-t space-y-2">
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Unidade à vista</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Pacote à vista</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Unidade a prazo</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
-                  <div className="text-center">
-                    <span className="block text-xs font-semibold text-gray-700">Pacote a prazo</span>
-                    <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
-                  </div>
-                </div>
+                {(priceMode === 'avista' || priceMode === 'both') && (
+                  <>
+                    <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Unidade à vista</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUV || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="pl-3 py-1 border-l-4 border-green-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Pacote à vista</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFV || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {(priceMode === 'prazo' || priceMode === 'both') && (
+                  <>
+                    <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Unidade a prazo</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceUP || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="pl-3 py-1 border-l-4 border-red-500 flex justify-center items-center">
+                      <div className="text-center">
+                        <span className="block text-xs font-semibold text-gray-700">Pacote a prazo</span>
+                        <span className="block text-lg font-bold text-gray-900">R$ {Number(product.priceFP || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -179,12 +196,46 @@
       )
     };
 
+    const ProductModal = ({product, onClose, priceMode, showPrices}) => {
+      if (!product) return null;
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-4 max-w-md w-full relative">
+            <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-gray-800">✕</button>
+            <img src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-64 object-contain rounded-xl mb-4" />
+            <h2 className="text-2xl font-bold mb-2" style={{color:'var(--brand-green)'}}>{product.name}</h2>
+            <p className="text-sm text-gray-600 mb-1">Código(s): {product.codes || '-'}</p>
+            <p className="text-sm text-gray-600 mb-4">Sabores: {product.flavors || '-'}</p>
+            {showPrices && (
+              <div className="space-y-2">
+                {(priceMode === 'avista' || priceMode === 'both') && (
+                  <>
+                    <div className="flex justify-between"><span className="font-semibold">Unidade à vista</span><span>R$ {Number(product.priceUV || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Pacote à vista</span><span>R$ {Number(product.priceFV || 0).toFixed(2)}</span></div>
+                  </>
+                )}
+                {(priceMode === 'prazo' || priceMode === 'both') && (
+                  <>
+                    <div className="flex justify-between"><span className="font-semibold">Unidade a prazo</span><span>R$ {Number(product.priceUP || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Pacote a prazo</span><span>R$ {Number(product.priceFP || 0).toFixed(2)}</span></div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     const HomePage = ()=>{
       const [catalog, setCatalog] = useState({ products:[], settings:{ categoriesOrder:[] } });
       const [loading, setLoading] = useState(true);
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
+      const [priceMode, setPriceMode] = useState(()=> localStorage.getItem('priceMode') || 'both');
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
+      const [showTop, setShowTop] = useState(false);
+      const [selectedProduct, setSelectedProduct] = useState(null);
       const contentRef = useRef(null);
 
       const loadCatalog = async (searchQuery, category) => {
@@ -194,6 +245,7 @@
           setCatalog(data);
         } catch (error) {
           console.error("Falha ao carregar o catálogo:", error);
+          setCatalog({ products: [], settings: { categoriesOrder: [] } });
         } finally {
           setLoading(false);
         }
@@ -203,7 +255,14 @@
         loadCatalog('', null);
       }, []);
 
+      useEffect(()=>{ localStorage.setItem('priceMode', priceMode) }, [priceMode]);
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
+
+      useEffect(() => {
+        const onScroll = () => setShowTop(window.scrollY > 300);
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
+      }, []);
 
       const handleSearchSubmit = (e) => {
           e.preventDefault();
@@ -225,6 +284,7 @@
       })).filter(g=>g.products.length>0);
 
       return (
+        <>
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
           <div className="my-8 text-center">
             <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
@@ -259,12 +319,17 @@
                 ))}
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Mostrar preços</span>
-                  <div className={`toggle ${showPrices? 'active':''}`} onClick={()=>setShowPrices(v=>!v)}>
-                    <div className="knob"></div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-700">Mostrar preços</span>
+                  <div onClick={()=>setShowPrices(v=>!v)} className={`toggle ${showPrices?'active':''}`}><div className="knob"></div></div>
                 </div>
+                {showPrices && (
+                  <select value={priceMode} onChange={e=>setPriceMode(e.target.value)} className="px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    <option value="both">Preços: ambos</option>
+                    <option value="avista">Preços: à vista</option>
+                    <option value="prazo">Preços: a prazo</option>
+                  </select>
+                )}
               </div>
             </div>
             <form onSubmit={handleSearchSubmit} className="relative">
@@ -273,8 +338,17 @@
                 placeholder="Buscar por nome, categoria ou código..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-4 pr-32 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-4 pr-64 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
               />
+              {query && (
+                <button
+                  type="button"
+                  onClick={()=>{ setQuery(''); loadCatalog('', activeCategory); }}
+                  className="absolute top-1/2 right-40 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Limpar
+                </button>
+              )}
               <button
                 type="submit"
                 className="absolute top-1/2 right-2 -translate-y-1/2 bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700 transition-colors"
@@ -291,7 +365,8 @@
               <p className="text-gray-700 font-semibold">Nenhum produto encontrado. Limpe a busca para ver todos os itens.</p>
             </div>
           ) : (
-            grouped.map(group=>{
+            <>
+              {grouped.map(group=>{
               const hasWaveBg = ['Bebidas não alcoólicas','Bomboneire','Utilidades'].includes(group.category);
               const content = (
                 <>
@@ -302,8 +377,8 @@
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                      {group.products.map(p=><ProductCard key={p.id} product={p} showPrices={showPrices}/>)}
+                    <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
+                      {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
                     </div>
                   </div>
                 </>
@@ -315,9 +390,26 @@
                   ) : content}
                 </div>
               )
-            })
+            })}
+              <footer className="mt-8 w-full bg-red-700 text-white py-12 flex flex-col items-center justify-center text-center">
+                <span className="text-5xl mb-4">🤝</span>
+                <p className="text-2xl font-bold">Você chegou ao final do catálogo!</p>
+                <p className="text-base mt-3 max-w-xl px-4">Foi um prazer ter você aqui. Agradecemos de coração pela visita e estamos sempre prontos para atender suas necessidades. Volte sempre!</p>
+              </footer>
+            </>
           )}
         </div>
+        {showTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-6 bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition-colors"
+            aria-label="Voltar ao topo"
+          >
+            ↑
+          </button>
+        )}
+        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} priceMode={priceMode} showPrices={showPrices} />
+        </>
       )
     };
 
@@ -463,6 +555,7 @@
       const [imagePreview,setImagePreview]=useState(null);
       const fileRef = useRef(null);
       const [categories,setCategories]=useState([]);
+      const [flavors,setFlavors]=useState(['']);
 
       useEffect(() => {
         (async () => {
@@ -476,18 +569,23 @@
                 if (p && !p.error) {
                   setProduct(p);
                   if (p.imageUrl) setImagePreview(p.imageUrl);
+                  const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
+                  setFlavors(fl);
                 } else {
                   setProduct({ name: '', category: cats[0] || '', active: true });
+                  setFlavors(['']);
                 }
               } catch (err) {
                 setProduct({ name: '', category: cats[0] || '', active: true });
               }
             } else {
               setProduct({ name: '', category: cats[0] || '', active: true });
+              setFlavors(['']);
             }
           } catch (err) {
             console.error(err);
             setProduct({ name: '', category: '', active: true });
+            setFlavors(['']);
           }
           setLoading(false);
         })();
@@ -496,6 +594,9 @@
       const change = (e)=>{
         const { name, value, type, checked } = e.target;
         setProduct(p=>({...p, [name]: (type==='checkbox'? checked : value)}));
+      }
+      const changeFlavor = (idx,val)=>{
+        setFlavors(f=>f.map((s,i)=> i===idx? val : s));
       }
       const onImage = (e)=>{
         if (e.target.files && e.target.files[0]){
@@ -506,9 +607,12 @@
       const save = async ()=>{
         const fd = new FormData();
         Object.entries(product).forEach(([k,v])=>{
+          if (k==='flavors') return;
           if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
           fd.append(k, v);
         });
+        const flStr = flavors.map(f=>f.trim()).filter(Boolean).join(', ');
+        if (flStr) fd.append('flavors', flStr);
         if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
         if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
         navigate('admin/products');
@@ -533,7 +637,16 @@
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div><label className="block font-semibold mb-1">Códigos</label><input name="codes" value={product.codes||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
-                  <div><label className="block font-semibold mb-1">Sabores/Disponibilidade</label><input name="flavors" value={product.flavors||''} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
+                  <div>
+                    <label className="block font-semibold mb-1">Sabores/Disponibilidade</label>
+                    {flavors.map((fl,idx)=>(
+                      <div key={idx} className="flex items-center gap-2 mb-2">
+                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg"/>
+                        {flavors.length>1 && <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="px-3 py-1 bg-red-500 text-white rounded-full relative z-10">✕</button>}
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>setFlavors(f=>[...f,''])} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+ sabor</button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-4">
