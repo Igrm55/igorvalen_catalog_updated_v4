@@ -139,10 +139,13 @@
       )
     };
 
-    // *** ProductCard com layout de preços atualizado ***
+    // *** Card de produto (abre modal ao clicar) ***
     const ProductCard = ({product, priceMode, showPrices, onSelect})=>{
       return (
-        <div onClick={() => onSelect && onSelect(product)} className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
+        <div
+          onClick={() => onSelect && onSelect(product)}
+          className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
+        >
           <div className="bg-white relative h-64">
             <img
               loading="lazy"
@@ -265,9 +268,9 @@
       }, []);
 
       const handleSearchSubmit = (e) => {
-          e.preventDefault();
-          setActiveCategory(null);
-          loadCatalog(query, null);
+        e.preventDefault();
+        setActiveCategory(null);
+        loadCatalog(query, null);
       };
       
       const handleCategoryClick = (category) => {
@@ -399,6 +402,7 @@
             </>
           )}
         </div>
+
         {showTop && (
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -408,7 +412,13 @@
             ↑
           </button>
         )}
-        <ProductModal product={selectedProduct} onClose={()=>setSelectedProduct(null)} priceMode={priceMode} showPrices={showPrices} />
+
+        <ProductModal
+          product={selectedProduct}
+          onClose={()=>setSelectedProduct(null)}
+          priceMode={priceMode}
+          showPrices={showPrices}
+        />
         </>
       )
     };
@@ -435,7 +445,7 @@
       )
     };
 
-    // *** SOLUÇÃO PROFISSIONAL: AdminProductListPage com layout de cards para mobile ***
+    // *** Admin: lista de produtos (tabela desktop + cards mobile) ***
     const AdminProductListPage = ()=>{
       const { navigate } = useApp();
       const [products,setProducts]=useState([]);
