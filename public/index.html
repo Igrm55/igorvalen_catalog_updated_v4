@@ -70,6 +70,10 @@
       getCatalog: async (q)=>{
         const params = new URLSearchParams(q||{}).toString();
         const res = await fetch('/api/catalog'+(params?'?'+params:''))
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Erro ao carregar catálogo')
+        }
         return res.json()
       },
       getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
@@ -139,8 +143,13 @@
     const ProductCard = ({product, showPrices})=>{
       return (
         <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-          <div className="bg-white p-2 relative h-48">
-            <img loading="lazy" src={product.imageUrl || '/img/placeholder.png'} alt={product.name} className="w-full h-full object-contain"/>
+          <div className="bg-white relative h-64">
+            <img
+              loading="lazy"
+              src={product.imageUrl || '/img/placeholder.png'}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="p-4 flex-grow flex flex-col">
             <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
@@ -185,6 +194,7 @@
       const [query, setQuery] = useState('');
       const [activeCategory, setActiveCategory] = useState(null);
       const [showPrices, setShowPrices] = useState(()=> localStorage.getItem('showPrices') === 'true');
+      const [showTop, setShowTop] = useState(false);
       const contentRef = useRef(null);
 
       const loadCatalog = async (searchQuery, category) => {
@@ -194,6 +204,7 @@
           setCatalog(data);
         } catch (error) {
           console.error("Falha ao carregar o catálogo:", error);
+          setCatalog({ products: [], settings: { categoriesOrder: [] } });
         } finally {
           setLoading(false);
         }
@@ -204,6 +215,12 @@
       }, []);
 
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
+
+      useEffect(() => {
+        const onScroll = () => setShowTop(window.scrollY > 300);
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
+      }, []);
 
       const handleSearchSubmit = (e) => {
           e.preventDefault();
@@ -225,6 +242,7 @@
       })).filter(g=>g.products.length>0);
 
       return (
+        <>
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
           <div className="my-8 text-center">
             <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
@@ -318,6 +336,16 @@
             })
           )}
         </div>
+        {showTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-6 bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition-colors"
+            aria-label="Voltar ao topo"
+          >
+            ↑
+          </button>
+        )}
+        </>
       )
     };
 
