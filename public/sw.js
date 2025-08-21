@@ -1,4 +1,4 @@
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CORE = [
   '/',
   '/index.html',
@@ -24,12 +24,21 @@ self.addEventListener('fetch', (e)=>{
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET') return;
-  // Network-first for API
-  if (url.pathname.startsWith('/api/')){
-    e.respondWith(fetch(req).catch(()=>caches.match(req)));
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith((async () => {
+      const cache = await caches.open('api-' + VERSION);
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+        throw err;
+      }
+    })());
     return;
   }
-  // Stale-while-revalidate for others
   e.respondWith((async ()=>{
     const cache = await caches.open('sw-'+VERSION);
     const cached = await cache.match(req);
