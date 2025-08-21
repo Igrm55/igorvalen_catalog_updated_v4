@@ -273,21 +273,33 @@
       useEffect(()=>{ localStorage.setItem('priceMode', priceMode) }, [priceMode]);
       useEffect(()=>{ localStorage.setItem('showPrices', showPrices) }, [showPrices]);
       useEffect(() => {
-        if (offlineReady && 'serviceWorker' in navigator) {
-          navigator.serviceWorker.register('/sw.js').catch(err=>console.error('SW', err));
+        if ('serviceWorker' in navigator) {
+          if (offlineReady) {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW', err));
+          } else {
+            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+          }
+        }
+        if (!offlineReady && 'caches' in window) {
+          caches.delete('catalog-offline-v1');
         }
       }, [offlineReady]);
 
-      const enableOffline = async () => {
-        try {
-          if ('serviceWorker' in navigator) {
-            await navigator.serviceWorker.register('/sw.js');
+      const toggleOffline = async () => {
+        if (offlineReady) {
+          localStorage.removeItem('offlineCatalog');
+          setOfflineReady(false);
+        } else {
+          try {
+            if ('serviceWorker' in navigator) {
+              await navigator.serviceWorker.register('/sw.js');
+            }
+          } catch(err){
+            console.error('SW', err);
           }
-        } catch(err){
-          console.error('SW', err);
+          localStorage.setItem('offlineCatalog', JSON.stringify(catalog));
+          setOfflineReady(true);
         }
-        localStorage.setItem('offlineCatalog', JSON.stringify(catalog));
-        setOfflineReady(true);
       };
 
 
@@ -363,7 +375,7 @@
                     <option value="prazo">Preços: a prazo</option>
                   </select>
                 )}
-                <button onClick={enableOffline} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${offlineReady? 'bg-green-600 text-white':'bg-yellow-400 text-gray-800 hover:bg-yellow-500'}`}>{offlineReady? 'Offline pronto':'Usar sem Wi-Fi'}</button>
+                <button onClick={toggleOffline} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${offlineReady? 'bg-green-600 text-white hover:bg-green-700':'bg-yellow-400 text-gray-800 hover:bg-yellow-500'}`}>{offlineReady? 'Desativar offline':'Usar sem Wi-Fi'}</button>
               </div>
             </div>
             <form onSubmit={handleSearchSubmit} className="relative">
