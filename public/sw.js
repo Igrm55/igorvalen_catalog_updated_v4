@@ -1,42 +1,22 @@
-const VERSION = 'v4';
-const CORE = [
+const CACHE_NAME = 'catalog-offline-v1';
+const CORE_ASSETS = [
   '/',
   '/index.html',
   '/img/placeholder.png'
 ];
-
-self.addEventListener('install', (e)=>{
-  self.skipWaiting();
-  e.waitUntil(caches.open('core-'+VERSION).then(c=>c.addAll(CORE)));
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS))
+  );
 });
-
-self.addEventListener('activate', (e)=>{
-  e.waitUntil((async ()=>{
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k=>{
-      if (!k.endsWith(VERSION)) return caches.delete(k);
-    }));
-    await self.clients.claim();
-  })());
-});
-
-self.addEventListener('fetch', (e)=>{
-  const req = e.request;
-  const url = new URL(req.url);
-  if (req.method !== 'GET') return;
-  // Network-first for API
-  if (url.pathname.startsWith('/api/')){
-    e.respondWith(fetch(req).catch(()=>caches.match(req)));
-    return;
-  }
-  // Stale-while-revalidate for others
-  e.respondWith((async ()=>{
-    const cache = await caches.open('sw-'+VERSION);
-    const cached = await cache.match(req);
-    const fetched = fetch(req).then(r=>{
-      if (r.ok) cache.put(req, r.clone());
-      return r;
-    }).catch(()=>cached);
-    return cached || fetched;
-  })());
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return res;
+      });
+    }).catch(() => caches.match('/index.html'))
+  );
 });
