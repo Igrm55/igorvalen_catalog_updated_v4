@@ -55,9 +55,10 @@
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .iso-round img{ width:80%; height:80%; object-fit:contain; }
     @media (min-width: 640px) {
-      .ism-section { flex-direction: row !important; }
-      .ism-section .ism-image,
-      .ism-section .ism-text { width:50%; }
+      .ism-section { flex-direction: row !important; align-items: stretch; }
+      .ism-section .ism-image { width:40%; }
+      .ism-section .ism-image img { width:100%; height:100%; object-fit:cover; }
+      .ism-section .ism-text { width:60%; }
     }
   </style>
 </head>
@@ -457,44 +458,44 @@
                   {group.category === 'Bebidas não alcoólicas' && (
                     <div className="mb-8 panel p-6 text-gray-800">
                       <div className="flex flex-col sm:flex-row items-start sm:space-x-6 ism-section">
-                        <div className="sm:w-1/2 w-full ism-image">
-                          <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-auto object-cover rounded-lg"/>
+                        <div className="ism-image w-full">
+                          <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-full object-cover rounded-lg"/>
                         </div>
-                        <div className="sm:w-1/2 w-full mt-6 sm:mt-0 ism-text">
+                        <div className="ism-text w-full mt-6 sm:mt-0 flex flex-col justify-start">
                           <h3 className="text-2xl font-bold text-green-700 mb-2">ISM Brasil: portfólio de alto giro e margem para o seu negócio.</h3>
                           <p>Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade reconhecida pela pureza da sua água —, a ISM entrega um mix que vende o dia todo:</p>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 text-[11px]">
-                            <div className="bg-gray-50 rounded-lg p-2">
+                          <div className="mt-4 text-[10px] leading-tight space-y-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">Goob</h4>
-                              <p className="leading-tight">Refrescância e sabor em perfeita harmonia. Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo (IBPC), Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes preferidos na região.</p>
+                              <p>Refrescância e sabor em perfeita harmonia. Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo (IBPC), Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes preferidos na região.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">Lôa</h4>
-                              <p className="leading-tight">Pureza que se sente a cada gole. Originária de Alagoinhas — reconhecida por ter a segunda melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p>
+                              <p>Pureza que se sente a cada gole. Originária de Alagoinhas — reconhecida por ter a segunda melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">EnerUp</h4>
-                              <p className="leading-tight">A combinação perfeita de taurina, cafeína, guaraná e vitaminas. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados. Uma pesquisa da Associação de Bares e Restaurantes do Recôncavo (ABRR) aponta que 3 em cada 10 consumidores já experimentaram e aprovaram a marca.</p>
+                              <p>A combinação perfeita de taurina, cafeína, guaraná e vitaminas. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados. Uma pesquisa da Associação de Bares e Restaurantes do Recôncavo (ABRR) aponta que 3 em cada 10 consumidores já experimentaram e aprovaram a marca.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">DrinkT</h4>
-                              <p className="leading-tight">Sabor, praticidade e refrescância. DrinkT apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p>
+                              <p>Sabor, praticidade e refrescância. DrinkT apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">Yulo</h4>
-                              <p className="leading-tight">O suco que conquistou as famílias. Rico em vitamina C e com um sabor que agrada a todos, Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia (CAV/BA) mostram que 6 em cada 10 famílias que experimentam, realizam a recompra do produto em menos de 30 dias.</p>
+                              <p>O suco que conquistou as famílias. Rico em vitamina C e com um sabor que agrada a todos, Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia (CAV/BA) mostram que 6 em cada 10 famílias que experimentam, realizam a recompra do produto em menos de 30 dias.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">GuaranUp</h4>
-                              <p className="leading-tight">A dose de energia natural para a rotina diária. Posicionado estrategicamente próximo a balcões de salgados e lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p>
+                              <p>A dose de energia natural para a rotina diária. Posicionado estrategicamente próximo a balcões de salgados e lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">Glow Ice</h4>
-                              <p className="leading-tight">Leveza e autenticidade. Com um perfil de sabor único, Glow atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição na gôndola.</p>
+                              <p>Leveza e autenticidade. Com um perfil de sabor único, Glow atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição na gôndola.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-2">
+                            <div>
                               <h4 className="font-bold mb-1 text-sm">Gostolac</h4>
-                              <p className="leading-tight">Sabor e economia que andam juntos. Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes, entregando mais valor para o consumidor.</p>
+                              <p>Sabor e economia que andam juntos. Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes, entregando mais valor para o consumidor.</p>
                             </div>
                           </div>
                         </div>
