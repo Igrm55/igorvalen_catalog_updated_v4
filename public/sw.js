@@ -1,9 +1,17 @@
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CORE = [
   '/',
   '/index.html',
   '/img/placeholder.png'
 ];
+
+let OFFLINE_ENABLED = false;
+
+self.addEventListener('message', (e)=>{
+  if (e.data && e.data.type === 'offline') {
+    OFFLINE_ENABLED = !!e.data.enabled;
+  }
+});
 
 self.addEventListener('install', (e)=>{
   self.skipWaiting();
@@ -29,14 +37,15 @@ self.addEventListener('fetch', (e)=>{
     e.respondWith(fetch(req).catch(()=>caches.match(req)));
     return;
   }
-  // Stale-while-revalidate for others
   e.respondWith((async ()=>{
     const cache = await caches.open('sw-'+VERSION);
     const cached = await cache.match(req);
-    const fetched = fetch(req).then(r=>{
-      if (r.ok) cache.put(req, r.clone());
-      return r;
-    }).catch(()=>cached);
-    return cached || fetched;
+    try {
+      const res = await fetch(req);
+      if (OFFLINE_ENABLED && res.ok) cache.put(req, res.clone());
+      return res;
+    } catch(err) {
+      return cached;
+    }
   })());
 });
