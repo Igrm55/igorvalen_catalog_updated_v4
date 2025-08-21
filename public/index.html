@@ -69,12 +69,14 @@
       },
       getCatalog: async (q)=>{
         const params = new URLSearchParams(q||{}).toString();
-        const res = await fetch('/api/catalog'+(params?'?'+params:''))
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}))
-          throw new Error(err.error || 'Erro ao carregar catálogo')
+        try {
+          const res = await fetch('/api/catalog'+(params?'?'+params:''));
+          if (!res.ok) throw new Error('HTTP '+res.status);
+          return await res.json();
+        } catch (err) {
+          console.error('Falha na busca do catálogo:', err);
+          return { products: [], settings: { categoriesOrder: [] } };
         }
-        return res.json()
       },
       getAdminProducts: async ()=> (await fetch('/api/admin/products')).json(),
       getProduct: async (id)=> (await fetch('/api/products/'+id)).json(),
@@ -240,21 +242,16 @@
 
       const loadCatalog = async (searchQuery, category) => {
         setLoading(true);
-        try {
-          const data = await api.getCatalog({ q: searchQuery, category: category || '' });
+        const data = await api.getCatalog({ q: searchQuery, category: category || '' });
+        if (data.products.length === 0) {
+          const cached = localStorage.getItem('offlineCatalog');
+          if (cached) setCatalog(JSON.parse(cached));
+          else setCatalog({ products: [], settings: { categoriesOrder: [] } });
+        } else {
           setCatalog(data);
           if (offlineReady) localStorage.setItem('offlineCatalog', JSON.stringify(data));
-        } catch (error) {
-          console.error("Falha ao carregar o catálogo:", error);
-          const cached = localStorage.getItem('offlineCatalog');
-          if (cached) {
-            setCatalog(JSON.parse(cached));
-          } else {
-            setCatalog({ products: [], settings: { categoriesOrder: [] } });
-          }
-        } finally {
-          setLoading(false);
         }
+        setLoading(false);
       }
 
       useEffect(() => {
