@@ -54,6 +54,11 @@
     }
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .iso-round img{ width:80%; height:80%; object-fit:contain; }
+    @media (min-width: 640px) {
+      .ism-section { flex-direction: row !important; }
+      .ism-section .ism-image,
+      .ism-section .ism-text { width:50%; }
+    }
   </style>
 </head>
 <body>
@@ -432,15 +437,15 @@
                       <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
                         <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
                       </div>
-                      <div className="rounded-2xl shadow-lg p-6 mb-6 text-gray-800 bg-[#F7F7F7]">
+                      <div className="rounded-2xl shadow-lg p-6 mb-6 text-gray-800 bg-[#F7F7F7] border border-black">
                         <h3 className="text-2xl font-bold mb-2 text-green-700">Brussels Pure Malte: a cerveja que se tornou febre nas redes sociais.</h3>
                         <p className="mb-4">Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega com reconhecimento imediato do público.</p>
                         <div className="grid md:grid-cols-2 gap-4 mb-4">
-                          <div className="bg-white rounded-lg p-4 border-l-2 border-black">
+                          <div className="bg-white rounded-lg p-4 border-l-4" style={{borderColor:'#1E7E34'}}>
                             <h4 className="text-lg font-bold mb-1" style={{color:'#1E7E34'}}>Lager <span className="text-gray-800">(verde)</span></h4>
                             <p className="text-sm">Puro malte leve e refrescante.</p>
                           </div>
-                          <div className="bg-white rounded-lg p-4 border-l-2 border-black">
+                          <div className="bg-white rounded-lg p-4 border-l-4" style={{borderColor:'#004085'}}>
                             <h4 className="text-lg font-bold mb-1" style={{color:'#004085'}}>Ultra <span className="text-gray-800">(azul)</span></h4>
                             <p className="text-sm">Puro malte zero açúcar e zero carboidrato, com o mesmo teor alcoólico e um sabor incrivelmente limpo.</p>
                           </div>
@@ -451,14 +456,14 @@
                   )}
                   {group.category === 'Bebidas não alcoólicas' && (
                     <div className="mb-8 panel p-6 text-gray-800">
-                      <div className="flex flex-col md:flex-row items-start md:space-x-6">
-                        <div className="md:w-1/2 w-full">
+                      <div className="flex flex-col sm:flex-row items-start sm:space-x-6 ism-section">
+                        <div className="sm:w-1/2 w-full ism-image">
                           <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-auto object-cover rounded-lg"/>
                         </div>
-                        <div className="md:w-1/2 w-full mt-6 md:mt-0">
+                        <div className="sm:w-1/2 w-full mt-6 sm:mt-0 ism-text">
                           <h3 className="text-2xl font-bold text-green-700 mb-2">ISM Brasil: portfólio de alto giro e margem para o seu negócio.</h3>
                           <p>Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade reconhecida pela pureza da sua água —, a ISM entrega um mix que vende o dia todo:</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-xs md:text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-xs sm:text-sm">
                             <div className="bg-gray-50 rounded-lg p-3">
                               <h4 className="font-bold mb-1 text-sm">Goob</h4>
                               <p className="text-[13px] leading-tight">Refrescância e sabor em perfeita harmonia. Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo (IBPC), Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes preferidos na região.</p>
