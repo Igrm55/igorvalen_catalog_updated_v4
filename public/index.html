@@ -424,9 +424,17 @@
               const content = (
                 <>
                   {group.category === 'Bebidas alcoólicas' && (
-                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
-                    </div>
+                    <>
+                      <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
+                        <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
+                      </div>
+                      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 flex items-start gap-4">
+                        <span className="text-4xl" role="img" aria-label="cerveja">🍻</span>
+                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">
+                          <strong>Brussels Pure Malte</strong> — a cerveja que virou febre nas redes sociais. Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels já chega reconhecida. Duas versões para vender mais: <span className="font-semibold">Lager</span> (verde), puro malte leve e refrescante; <span className="font-semibold">Ultra</span> (azul), puro malte zero açúcar e zero carboidrato, mantendo teor alcoólico e sabor limpo. Rótulos que chamam atenção na geladeira, lata 350 ml e garrafa 275 ml fáceis de expor e preço que dá margem. Quem coloca na gôndola vê o giro: a curiosidade traz o primeiro pedido, o sabor garante a recompra.
+                        </p>
+                      </div>
+                    </>
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
