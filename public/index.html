@@ -120,6 +120,21 @@
 
     const Header = ()=>{
       const { navigate } = useApp();
+      const [offline, setOffline] = useState(()=> localStorage.getItem('offline') === '1');
+      useEffect(()=>{
+        if (!('serviceWorker' in navigator)) return;
+        (async ()=>{
+          if (offline){
+            try{ await navigator.serviceWorker.register('/sw.js'); }catch(e){ console.warn('SW', e); }
+          }else{
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r=>r.unregister()));
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k=>caches.delete(k)));
+          }
+        })();
+        if (offline) localStorage.setItem('offline','1'); else localStorage.removeItem('offline');
+      }, [offline]);
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-24">
@@ -133,6 +148,7 @@
             <div className="flex items-center space-x-4 text-white font-semibold">
               <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">Catálogo</button>
               <button onClick={() => navigate('admin')} className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-all transform hover:scale-105">Área do&nbsp;Admin</button>
+              <button onClick={()=>setOffline(o=>!o)} className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-all transform hover:scale-105">{offline ? 'Offline ativo' : 'Usar sem Wi‑Fi'}</button>
             </div>
           </div>
         </header>
@@ -381,9 +397,17 @@
               const content = (
                 <>
                   {group.category === 'Bebidas alcoólicas' && (
-                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
-                    </div>
+                    <>
+                      <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
+                        <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
+                      </div>
+                      <div className="bg-white text-gray-700 p-4 rounded-2xl shadow-md mb-6">
+                        <h3 className="text-xl font-bold text-green-700 mb-2">Brussels Pure Malte — a sensação das redes sociais</h3>
+                        <p className="text-sm">
+                          Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega reconhecida e pronta para vender. São duas versões que conquistam: <span className="font-semibold">Lager</span> (verde) leve e refrescante, e <span className="font-semibold">Ultra</span> (azul) zero açúcar e zero carboidrato, mantendo teor alcoólico e sabor limpo. Rótulos chamativos, lata 350&nbsp;ml e garrafa 275&nbsp;ml fáceis de expor e preço com ótima margem. Quem coloca na gôndola vê o giro: a curiosidade traz o primeiro pedido e o sabor garante a recompra. Leve já a novidade que seu cliente procura.
+                        </p>
+                      </div>
+                    </>
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
@@ -656,13 +680,14 @@
                   <div>
                     <label className="block font-semibold mb-1">Sabores/Disponibilidade</label>
                     {flavors.map((fl,idx)=>(
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg"/>
-                        {flavors.length>1 && <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="px-3 py-1 bg-red-500 text-white rounded-full relative z-10">✕</button>}
+                      <div key={idx} className="relative mb-2">
+                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="w-full p-2 pr-8 bg-gray-100 border border-gray-300 rounded-lg"/>
+                        {flavors.length>1 && (
+                          <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">✕</button>
+                        )}
                       </div>
-                    ))}
+                    ))
                     <button type="button" onClick={()=>setFlavors(f=>[...f,''])} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+ sabor</button>
-                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -711,17 +736,6 @@
 
     ReactDOM.render(<AppProvider><Header/><main><App/></main></AppProvider>, document.getElementById('root'));
 
-    if ('serviceWorker' in navigator){
-      window.addEventListener('load', async ()=>{
-        try{
-          const regs = await navigator.serviceWorker.getRegistrations();
-          regs.forEach(r=>{
-            if (!r.active || (r.active && !r.active.scriptURL.endsWith('/sw.js'))) r.unregister();
-          });
-          await navigator.serviceWorker.register('/sw.js');
-        }catch(e){ console.warn('SW',e) }
-      })
-    }
   </script>
 </body>
 </html>
