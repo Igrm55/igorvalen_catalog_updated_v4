@@ -242,16 +242,25 @@
 
       const loadCatalog = async (searchQuery, category) => {
         setLoading(true);
-        const data = await api.getCatalog({ q: searchQuery, category: category || '' });
-        if (data.products.length === 0) {
+        try {
+          const data = await api.getCatalog({ q: searchQuery, category: category || '' });
+          if (!data || !Array.isArray(data.products)) throw new Error('invalid data');
+          if (data.products.length === 0) {
+            const cached = localStorage.getItem('offlineCatalog');
+            if (cached) setCatalog(JSON.parse(cached));
+            else setCatalog({ products: [], settings: { categoriesOrder: [] } });
+          } else {
+            setCatalog(data);
+            if (offlineReady) localStorage.setItem('offlineCatalog', JSON.stringify(data));
+          }
+        } catch (err) {
+          console.error('Catalog load failed:', err);
           const cached = localStorage.getItem('offlineCatalog');
           if (cached) setCatalog(JSON.parse(cached));
           else setCatalog({ products: [], settings: { categoriesOrder: [] } });
-        } else {
-          setCatalog(data);
-          if (offlineReady) localStorage.setItem('offlineCatalog', JSON.stringify(data));
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
 
       useEffect(() => {
