@@ -47,8 +47,7 @@
     .toggle.active .knob { left:26px; }
     .banner img {
       width: 100%;
-      height: 500px;
-      max-height: none;
+      height: 260px;
       object-fit: cover;
       background: #0f8a3a;
     }
@@ -324,6 +323,13 @@
           .sort((a,b)=> a.name.localeCompare(b.name))
       })).filter(g=>g.products.length>0);
 
+      const categoryIcons = {
+        'Bebidas alcoólicas': 'https://img.icons8.com/fluency/24/beer.png',
+        'Bebidas não alcoólicas': 'https://img.icons8.com/fluency/24/soda-can.png',
+        'Bomboneire': 'https://img.icons8.com/fluency/24/candy.png',
+        'Utilidades': 'https://img.icons8.com/fluency/24/toolbox.png'
+      };
+
       return (
         <>
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -360,7 +366,10 @@
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
                 {order.map(cat => (
-                  <button key={cat} onClick={() => handleCategoryClick(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{cat}</button>
+                  <button key={cat} onClick={() => handleCategoryClick(cat)} className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    {categoryIcons[cat] && <img src={categoryIcons[cat]} alt="" className="w-5 h-5" />}
+                    <span>{cat}</span>
+                  </button>
                 ))}
               </div>
               <div className="flex items-center gap-4 flex-wrap">
@@ -426,38 +435,45 @@
                   {group.category === 'Bebidas alcoólicas' && (
                     <>
                       <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                        <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
+                        <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-220 object-contain"/>
                       </div>
-                      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 flex items-start gap-4">
-                        <span className="text-4xl" role="img" aria-label="cerveja">🍻</span>
-                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">
-                          <strong>Brussels Pure Malte</strong> — a cerveja que virou febre nas redes sociais. Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels já chega reconhecida. Duas versões para vender mais: <span className="font-semibold">Lager</span> (verde), puro malte leve e refrescante; <span className="font-semibold">Ultra</span> (azul), puro malte zero açúcar e zero carboidrato, mantendo teor alcoólico e sabor limpo. Rótulos que chamam atenção na geladeira, lata 350 ml e garrafa 275 ml fáceis de expor e preço que dá margem. Quem coloca na gôndola vê o giro: a curiosidade traz o primeiro pedido, o sabor garante a recompra.
-                        </p>
+                      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                        <div className="flex items-start gap-4">
+                          <img src="https://img.icons8.com/fluency/48/beer.png" alt="Cerveja" className="w-12 h-12" />
+                          <p className="text-gray-700 leading-relaxed text-sm md:text-base">
+                            <strong>Brussels Pure Malte</strong> — a cerveja que virou febre nas redes sociais. Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels já chega reconhecida. Duas versões para vender mais: <span className="font-semibold">Lager</span> (verde), puro malte leve e refrescante; <span className="font-semibold">Ultra</span> (azul), puro malte zero açúcar e zero carboidrato, mantendo teor alcoólico e sabor limpo. Rótulos que chamam atenção na geladeira, lata 350 ml e garrafa 275 ml fáceis de expor e preço que dá margem. Quem coloca na gôndola vê o giro: a curiosidade traz o primeiro pedido, o sabor garante a recompra.
+                          </p>
+                        </div>
                       </div>
                     </>
                   )}
                   {group.category === 'Bebidas não alcoólicas' && (
                     <>
                       <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                        <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-auto max-h-340 object-contain"/>
+                        <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-auto max-h-220 object-contain"/>
                       </div>
-                      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 flex items-start gap-4">
-                        <span className="text-4xl" role="img" aria-label="bebidas">🥤</span>
-                        <div className="text-gray-700 leading-relaxed text-sm md:text-base space-y-4">
-                          <p><strong>ISM Brasil</strong> — portfólio que gira e dá margem no seu ponto. Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade amplamente reconhecida pela pureza da água (2ª melhor do mundo) a ISM entrega um mix que vende o dia todo:</p>
-                          <p><strong>Goob (Refrigerante)</strong><br/>Refrescância e sabor em perfeita harmonia. Com uma carbonatação intensa e uma vasta gama de sabores, Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo (IBPC), Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes preferidos na região.</p>
-                          <p><strong>Lôa (Água Mineral)</strong><br/>Pureza que se sente a cada gole. Com um teor de sódio excepcionalmente baixo (apenas 10,1 mg/L) e originária de Alagoinhas — reconhecida por ter a segunda melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p>
-                          <p><strong>EnerUp (Energético)</strong><br/>A combinação perfeita de taurina, cafeína, guaraná e vitaminas para quem busca máximo desempenho. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados. Uma pesquisa da Associação de Bares e Restaurantes do Recôncavo (ABRR) aponta que 3 em cada 10 consumidores já experimentaram e aprovaram a marca.</p>
-                          <p><strong>DrinkTea (Chá Gelado)</strong><br/>Sabor, praticidade e refrescância para qualquer hora do dia. Ideal para o clima da nossa terra, o DrinkTea apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p>
-                          <p><strong>Yulo (Suco)</strong><br/>O suco que conquistou as famílias. Rico em vitamina C e com um sabor que agrada a todos, Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia (CAV/BA) mostram que 6 em cada 10 famílias que experimentam, realizam a recompra do produto em menos de 30 dias.</p>
-                          <p><strong>GuaranUp (Guaraná com Açaí)</strong><br/>A dose de energia natural para a rotina diária. Posicionado estrategicamente próximo a balcões de salgados e lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p>
-                          <p><strong>Glow (Bebida Ice)</strong><br/>Leveza e autenticidade em uma bebida pronta para qualquer ocasião. Com um perfil de sabor único, Glow atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição na gôndola.</p>
-                          <p><strong>Gostolac (Composto Lácteo)</strong><br/>Sabor e economia que andam juntos. Desenvolvido para oferecer um sabor delicioso e um rendimento superior, Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes, entregando mais valor para o consumidor.</p>
+                      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                        <div className="flex items-center gap-4 mb-4">
+                          <img src="https://img.icons8.com/fluency/48/soda-can.png" alt="Bebidas" className="w-12 h-12" />
+                          <p className="text-gray-700 text-sm md:text-base"><strong>ISM Brasil</strong> — portfólio que gira e dá margem no seu ponto. Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade amplamente reconhecida pela pureza da água (2ª melhor do mundo) a ISM entrega um mix que vende o dia todo:</p>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4 text-gray-700 text-sm md:text-base">
+                          <div><h4 className="font-semibold">Goob (Refrigerante)</h4><p>Refrescância e sabor em perfeita harmonia. Com uma carbonatação intensa e uma vasta gama de sabores, Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo (IBPC), Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes preferidos na região.</p></div>
+                          <div><h4 className="font-semibold">Lôa (Água Mineral)</h4><p>Pureza que se sente a cada gole. Com um teor de sódio excepcionalmente baixo (apenas 10,1 mg/L) e originária de Alagoinhas — reconhecida por ter a segunda melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p></div>
+                          <div><h4 className="font-semibold">EnerUp (Energético)</h4><p>A combinação perfeita de taurina, cafeína, guaraná e vitaminas para quem busca máximo desempenho. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados. Uma pesquisa da Associação de Bares e Restaurantes do Recôncavo (ABRR) aponta que 3 em cada 10 consumidores já experimentaram e aprovaram a marca.</p></div>
+                          <div><h4 className="font-semibold">DrinkTea (Chá Gelado)</h4><p>Sabor, praticidade e refrescância para qualquer hora do dia. Ideal para o clima da nossa terra, o DrinkTea apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p></div>
+                          <div><h4 className="font-semibold">Yulo (Suco)</h4><p>O suco que conquistou as famílias. Rico em vitamina C e com um sabor que agrada a todos, Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia (CAV/BA) mostram que 6 em cada 10 famílias que experimentam, realizam a recompra do produto em menos de 30 dias.</p></div>
+                          <div><h4 className="font-semibold">GuaranUp (Guaraná com Açaí)</h4><p>A dose de energia natural para a rotina diária. Posicionado estrategicamente próximo a balcões de salgados e lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p></div>
+                          <div className="sm:col-span-2"><h4 className="font-semibold">Glow (Bebida Ice)</h4><p>Leveza e autenticidade em uma bebida pronta para qualquer ocasião. Com um perfil de sabor único, Glow atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição na gôndola.</p></div>
+                          <div className="sm:col-span-2"><h4 className="font-semibold">Gostolac (Composto Lácteo)</h4><p>Sabor e economia que andam juntos. Desenvolvido para oferecer um sabor delicioso e um rendimento superior, Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes, entregando mais valor para o consumidor.</p></div>
                         </div>
                       </div>
                     </>
                   )}
-                  <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
+                  <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>
+                    {categoryIcons[group.category] && <img src={categoryIcons[group.category]} alt="" className="w-8 h-8" />}
+                    <span>{group.category}</span>
+                  </h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
                     <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
                       {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
