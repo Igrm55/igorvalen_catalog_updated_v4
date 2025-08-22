@@ -54,13 +54,45 @@
     }
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .iso-round img{ width:80%; height:80%; object-fit:contain; }
-  </style>
+    @media (min-width: 640px) {
+      .ism-section { flex-direction: row !important; align-items: stretch !important; }
+      .ism-section .ism-image { width:50%; display:grid; grid-template-rows:1fr 1fr; grid-template-columns:1fr; height:100%; }
+      .ism-section .ism-image img { width:100%; height:100%; object-fit:cover; }
+      .ism-section .ism-text { width:50%; max-width:none; }
+    }
+    </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect, useRef, createContext, useContext } = React;
     const AppContext = createContext();
+
+    const categoryIcons = {
+      'Todas': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25A2.25 2.25 0 0 1 13.5 8.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+      ),
+      'Bomboniere': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 7v10.9"/><path d="M14 6.1V17"/><path d="M16 7V3a1 1 0 0 1 1.707-.707 2.5 2.5 0 0 0 2.152.717 1 1 0 0 1 1.131 1.131 2.5 2.5 0 0 0 .717 2.152A1 1 0 0 1 21 8h-4"/><path d="M16.536 7.465a5 5 0 0 0-7.072 0l-2 2a5 5 0 0 0 0 7.07 5 5 0 0 0 7.072 0l2-2a5 5 0 0 0 0-7.07"/><path d="M8 17v4a1 1 0 0 1-1.707.707 2.5 2.5 0 0 0-2.152-.717 1 1 0 0 1-1.131-1.131 2.5 2.5 0 0 0-.717-2.152A1 1 0 0 1 3 16h4"/></svg>
+      ),
+      'Bebidas não alcoólicas': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8"/><path d="M5 8h14"/><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/><path d="m12 8 1-6h2"/></svg>
+      ),
+      'Bebidas alcoólicas': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M9 12v6"/><path d="M13 12v6"/><path d="M14 7.5c-1 0-1.44.5-3 .5s-2-.5-3-.5-1.72.5-2.5.5a2.5 2.5 0 0 1 0-5c.78 0 1.57.5 2.5.5S9.44 2 11 2s2 1.5 3 1.5 1.72-.5 2.5-.5a2.5 2.5 0 0 1 0 5c-.78 0-1.5-.5-2.5-.5Z"/><path d="M5 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>
+      ),
+      'Cigarro': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 12H3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14"/><path d="M18 8c0-2.5-2-2.5-2-5"/><path d="M21 16a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M22 8c0-2.5-2-2.5-2-5"/><path d="M7 12v4"/></svg>
+      ),
+      'Utilidades': (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z"/></svg>
+      ),
+      default: (
+        <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+      )
+    };
+
+    const getCategoryIcon = (cat) => categoryIcons[cat] || categoryIcons.default;
 
     const api = {
       loginAdmin: async (password)=>{
@@ -87,6 +119,7 @@
     const AppProvider = ({children})=>{
       const [route, setRoute] = useState({name:'home', params:{}});
       const [isAdmin, setIsAdmin] = useState(false);
+      const [offline, setOffline] = useState(()=> localStorage.getItem('offline') === 'true');
       const navigate = (name, params = {}) => {
         let path = name === 'home' ? '/' : `/${name}`;
         if (params && typeof params.id !== 'undefined' && params.id !== null) {
@@ -114,12 +147,24 @@
         },
         logout: ()=> setIsAdmin(false),
       };
-      return <AppContext.Provider value={{route, navigate, auth}}>{children}</AppContext.Provider>
+
+      useEffect(()=>{
+        if ('serviceWorker' in navigator){
+          navigator.serviceWorker.ready.then(reg=>{
+            reg.active?.postMessage({type:'offline', enabled: offline});
+          });
+        }
+        localStorage.setItem('offline', offline);
+      }, [offline]);
+
+      const toggleOffline = ()=> setOffline(v=>!v);
+
+      return <AppContext.Provider value={{route, navigate, auth, offline, toggleOffline}}>{children}</AppContext.Provider>
     };
     const useApp = ()=> useContext(AppContext);
 
     const Header = ()=>{
-      const { navigate } = useApp();
+      const { navigate, offline, toggleOffline } = useApp();
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-24">
@@ -132,6 +177,10 @@
             </div>
             <div className="flex items-center space-x-4 text-white font-semibold">
               <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">Catálogo</button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Usar sem Wi-Fi</span>
+                <div onClick={toggleOffline} className={`toggle ${offline?'active':''}`}><div className="knob"></div></div>
+              </div>
               <button onClick={() => navigate('admin')} className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-all transform hover:scale-105">Área do&nbsp;Admin</button>
             </div>
           </div>
@@ -316,9 +365,13 @@
           <div ref={contentRef} className="panel p-6 mb-8">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Todas</button>
+                <button onClick={() => handleCategoryClick(null)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                  <span className="inline-flex items-center gap-1">{getCategoryIcon('Todas')} Todas</span>
+                </button>
                 {order.map(cat => (
-                  <button key={cat} onClick={() => handleCategoryClick(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{cat}</button>
+                  <button key={cat} onClick={() => handleCategoryClick(cat)} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    <span className="inline-flex items-center gap-1">{getCategoryIcon(cat)} {cat}</span>
+                  </button>
                 ))}
               </div>
               <div className="flex items-center gap-4 flex-wrap">
@@ -381,11 +434,76 @@
               const content = (
                 <>
                   {group.category === 'Bebidas alcoólicas' && (
-                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
+                    <>
+                      <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
+                        <img loading="lazy" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto max-h-340 object-contain"/>
+                      </div>
+                      <div className="rounded-2xl shadow-lg p-6 mb-6 text-gray-800 bg-[#F7F7F7] border-2 border-black">
+                        <h3 className="text-2xl font-bold mb-2 text-green-700">Brussels Pure Malte: a cerveja que se tornou febre nas redes sociais.</h3>
+                        <p className="mb-4">Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega com reconhecimento imediato do público.</p>
+                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-white rounded-lg p-4 border-l-4" style={{borderColor:'#1E7E34'}}>
+                            <h4 className="text-lg font-bold mb-1" style={{color:'#1E7E34'}}>Lager</h4>
+                            <p className="text-sm">Puro malte leve e refrescante.</p>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border-l-4" style={{borderColor:'#004085'}}>
+                            <h4 className="text-lg font-bold mb-1" style={{color:'#004085'}}>Ultra</h4>
+                            <p className="text-sm">Puro malte zero açúcar e zero carboidrato, com o mesmo teor alcoólico e um sabor incrivelmente limpo.</p>
+                          </div>
+                        </div>
+                        <p>Seus rótulos chamam a atenção na geladeira e os formatos (lata 350 ml e garrafa 275 ml) são perfeitos para expor. Com um preço que garante ótima margem, o giro é certo: a curiosidade do seu cliente traz o primeiro pedido, o sabor garante a recompra. Tenha em seu ponto de venda a novidade que todos já estão procurando!</p>
+                      </div>
+                    </>
+                  )}
+                  {group.category === 'Bebidas não alcoólicas' && (
+                    <div className="mb-8 panel p-6 overflow-hidden text-gray-800">
+                      <div className="ism-section flex flex-col gap-4 sm:flex-row sm:gap-0">
+                        <div className="ism-image w-full">
+                          <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-full object-cover"/>
+                          <img loading="lazy" src="https://i.ibb.co/PvnmNKKw/100.jpg" alt="ISM Brasil produtos" className="w-full h-full object-cover"/>
+                        </div>
+                        <div className="ism-text w-full sm:pl-6">
+                          <h3 className="text-xl font-bold text-green-700 mb-1">ISM Brasil: portfólio de alto giro para o seu negócio.</h3>
+                          <p className="text-xs leading-tight">Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade reconhecida pela pureza da sua água —, a ISM entrega um mix que vende o dia todo:</p>
+                          <div className="mt-2 grid grid-cols-2 gap-2 text-[9px] leading-snug">
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">Goob</h4>
+                              <p>Refrescância e sabor. Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo, Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes mais consumidos na região.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">Lôa</h4>
+                              <p>Pureza que se sente a cada gole. Originária de Alagoinhas — reconhecida por ter a 2ª melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">EnerUp</h4>
+                              <p>A combinação perfeita de taurina, cafeína, guaraná e vitaminas. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">DrinkT</h4>
+                              <p>Sabor, praticidade e refrescância. Ideal para o clima da nossa terra, o DrinkT apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">Yulo</h4>
+                              <p>O suco que conquistou as famílias. Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia mostram que 6 em cada 10 famílias que experimentam realizam a recompra em menos de 30 dias.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">GuaranUp</h4>
+                              <p>A dose ideal de energia para a rotina. Posicionado próximo a balcões de salgados/lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">Glow Ice</h4>
+                              <p>Leveza e autenticidade. Com um sabor único, Glow Ice atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição.</p>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-[11px]">Gostolac</h4>
+                              <p>Sabor e economia. Desenvolvido para oferecer um sabor delicioso e um rendimento superior, Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
+                  <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{getCategoryIcon(group.category)}{group.category}</h2>
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
                     <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
                       {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
@@ -656,9 +774,9 @@
                   <div>
                     <label className="block font-semibold mb-1">Sabores/Disponibilidade</label>
                     {flavors.map((fl,idx)=>(
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg"/>
-                        {flavors.length>1 && <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="px-3 py-1 bg-red-500 text-white rounded-full relative z-10">✕</button>}
+                      <div key={idx} className="mb-2 relative">
+                        <input value={fl} onChange={e=>changeFlavor(idx,e.target.value)} className="w-full p-2 pr-8 bg-gray-100 border border-gray-300 rounded-lg"/>
+                        {flavors.length>1 && <button type="button" onClick={()=>setFlavors(f=>f.filter((_,i)=>i!==idx))} className="absolute top-1/2 -translate-y-1/2 right-2 text-red-500">✕</button>}
                       </div>
                     ))}
                     <button type="button" onClick={()=>setFlavors(f=>[...f,''])} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+ sabor</button>
