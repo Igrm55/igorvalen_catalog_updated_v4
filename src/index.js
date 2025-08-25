@@ -9,7 +9,6 @@ async function start() {
   try {
     await store.load();
     console.log('[catalog] loaded from GitHub');
-    console.log('[catalog] using GitHub storage');
 
     const app = express();
     const PORT = process.env.PORT || 4000;
