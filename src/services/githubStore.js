@@ -1,20 +1,13 @@
+// Store do catálogo usando GitHub Contents API
+
 const GITHUB_API = 'https://api.github.com';
 const ownerRepo = process.env.DATA_REPO;            // ex: "Igrm55/catalogo-data"
 const branch    = process.env.DATA_BRANCH || 'main';
 const filePath  = process.env.DATA_PATH   || 'data/catalogo.json';
 const token     = process.env.GITHUB_TOKEN;
 
-let _fetch = global.fetch;
-if (_fetch) {
-  console.log('[githubStore] using global fetch');
-} else {
-  try {
-    ({ fetch: _fetch } = require('undici'));
-    console.log('[githubStore] using undici fetch');
-  } catch (err) {
-    throw new Error('Fetch not available and undici not installed');
-  }
-}
+// usa fetch nativo do Node 18+
+const _fetch = globalThis.fetch;
 
 function headers() {
   return {
@@ -37,6 +30,7 @@ async function putFile(obj, message = 'chore(data): update catalog') {
   const content = Buffer.from(JSON.stringify(obj, null, 2), 'utf8').toString('base64');
   let sha;
   try { sha = (await getFile()).sha; } catch (_) { sha = undefined; }
+
   const body = {
     message,
     content,
@@ -47,6 +41,7 @@ async function putFile(obj, message = 'chore(data): update catalog') {
       email: process.env.DATA_COMMITTER_EMAIL || 'bot@example.com'
     }
   };
+
   const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}`;
   const res = await _fetch(url, { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`GitHub putFile failed: ${res.status} ${res.statusText}`);
