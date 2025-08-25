@@ -1,6 +1,9 @@
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
+ main
  main
 // Store do catálogo usando GitHub Contents API (CommonJS)
 
@@ -24,6 +27,8 @@ const branch = process.env.DATA_BRANCH || 'main';
 const filePath = process.env.DATA_PATH || 'data/catalogo.json';
 const token = process.env.GITHUB_TOKEN;
 
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -46,13 +51,17 @@ if (!_fetch) {
 
  main
  main
+ main
 function headers() {
   return {
     Authorization: `Bearer ${token}`,
     'User-Agent': 'catalogo-app',
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
+ main
  main
     'Content-Type': 'application/json',
     Accept: 'application/vnd.github+json',
@@ -85,6 +94,8 @@ async function getFileMeta() {
 async function getFile() {
   const meta = await getFileMeta();
   if (!meta) return { sha: null, json: null };
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -99,11 +110,17 @@ async function getFile() {
   const meta = await res.json();
  main
  main
+ main
   const content = Buffer.from(meta.content, meta.encoding).toString('utf8');
   return { sha: meta.sha, json: JSON.parse(content) };
 }
 
 async function putFile(obj, message = 'chore(data): update catalog') {
+ codex/add-github-storage-service-for-catalog-ymiwro
+  const normalized = ensureShape(obj);
+  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
+  const meta = await getFileMeta(); // pega sha se já existir
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
   const normalized = ensureShape(obj);
   const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
@@ -122,13 +139,17 @@ async function putFile(obj, message = 'chore(data): update catalog') {
 
  main
  main
+ main
   const body = {
     message,
     content,
     branch,
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
+ main
  main
     sha: meta ? meta.sha : undefined,
     committer: {
@@ -142,6 +163,8 @@ async function putFile(obj, message = 'chore(data): update catalog') {
     headers: headers(),
     body: JSON.stringify(body)
   });
+codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -156,6 +179,7 @@ async function putFile(obj, message = 'chore(data): update catalog') {
   const res = await _fetch(url, { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
  main
  main
+ main
   if (!res.ok) throw new Error(`GitHub putFile failed: ${res.status} ${res.statusText}`);
   const out = await res.json();
   return out.content.sha;
@@ -165,9 +189,12 @@ let cache = null;
 
 async function load() {
   const { json } = await getFile();
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
+ main
  main
   if (!json) {
     const initial = { products: [], settings: { categoriesOrder: [] } };
@@ -176,10 +203,13 @@ async function load() {
     return cache;
   }
   cache = ensureShape(json);
+ codex/add-github-storage-service-for-catalog-ymiwro
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
   cache = json;
+ main
  main
  main
   return cache;
@@ -192,6 +222,9 @@ function getCache() {
 
 async function save(next) {
   await putFile(next, `chore(data): update at ${new Date().toISOString()}`);
+ codex/add-github-storage-service-for-catalog-ymiwro
+  cache = ensureShape(next);
+=======
  codex/add-github-storage-service-for-catalog-6t7hvp
   cache = ensureShape(next);
 
@@ -199,6 +232,7 @@ async function save(next) {
   cache = ensureShape(next);
 
   cache = next;
+ main
  main
  main
   return cache;
