@@ -1,5 +1,4 @@
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
@@ -22,13 +21,13 @@ if (_fetch) {
 }
 
 const GITHUB_API = 'https://api.github.com';
+const ownerRepo = process.env.DATA_REPO;            // ex: "lgrm55/catalogo-data"
 const ownerRepo = process.env.DATA_REPO;            // ex: "Igrm55/catalogo-data"
 const branch = process.env.DATA_BRANCH || 'main';
 const filePath = process.env.DATA_PATH || 'data/catalogo.json';
 const token = process.env.GITHUB_TOKEN;
 
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -57,7 +56,6 @@ function headers() {
     Authorization: `Bearer ${token}`,
     'User-Agent': 'catalogo-app',
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
@@ -95,7 +93,6 @@ async function getFile() {
   const meta = await getFileMeta();
   if (!meta) return { sha: null, json: null };
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -116,11 +113,13 @@ async function getFile() {
 }
 
 async function putFile(obj, message = 'chore(data): update catalog') {
+  const normalized = ensureShape(obj);
+  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
+  const meta = await getFileMeta(); // pega sha se já existir
  codex/add-github-storage-service-for-catalog-ymiwro
   const normalized = ensureShape(obj);
   const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
   const meta = await getFileMeta(); // pega sha se já existir
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
   const normalized = ensureShape(obj);
   const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
@@ -145,7 +144,6 @@ async function putFile(obj, message = 'chore(data): update catalog') {
     content,
     branch,
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
@@ -164,7 +162,6 @@ async function putFile(obj, message = 'chore(data): update catalog') {
     body: JSON.stringify(body)
   });
 codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -190,7 +187,6 @@ let cache = null;
 async function load() {
   const { json } = await getFile();
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  codex/add-github-storage-service-for-catalog-d0sknz
@@ -204,7 +200,6 @@ async function load() {
   }
   cache = ensureShape(json);
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
 
@@ -222,9 +217,9 @@ function getCache() {
 
 async function save(next) {
   await putFile(next, `chore(data): update at ${new Date().toISOString()}`);
+  cache = ensureShape(next);
  codex/add-github-storage-service-for-catalog-ymiwro
   cache = ensureShape(next);
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
   cache = ensureShape(next);
 

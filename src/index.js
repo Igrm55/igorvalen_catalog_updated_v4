@@ -1,3 +1,7 @@
+codex/add-github-storage-service-for-catalog-ylqm88
+'use strict';
+// server bootstrap entrypoint
+
  codex/add-github-storage-service-for-catalog-ymiwro
 'use strict';
 // server bootstrap entrypoint
@@ -18,6 +22,9 @@ const store = require('./services/githubStore');
 
 async function start() {
   try {
+    console.log('[bootstrap] initializing');
+    await store.load();
+    console.log('[catalog] loaded from GitHub');
     await store.load();
     console.log('[catalog] loaded from GitHub');
  codex/add-github-storage-service-for-catalog-ymiwro
@@ -43,6 +50,7 @@ async function start() {
   app.use((req,res,next)=>{
     if (req.path === '/' || req.path === '/index.html'){
       res.set('Cache-Control','no-store');
+
  codex/add-github-storage-service-for-catalog-ymiwro
     }
     next();
@@ -79,6 +87,7 @@ async function start() {
     return { id: 1, categoriesOrder: order };
   }
 
+
   // ---- Public API ----
   app.get('/api/catalog', (req,res)=>{
     try{
@@ -421,6 +430,7 @@ async function start() {
         priceUP: normalizeNumber(body.priceUP),
         priceFV: normalizeNumber(body.priceFV),
         priceFP: normalizeNumber(body.priceFP),
+
  codex/add-github-storage-service-for-catalog-6t7hvp
         sortOrder: Number(body.sortOrder || 0),
         active: body.active === 'false' ? false : true,
@@ -463,6 +473,7 @@ async function start() {
       const products = catalog.products || [];
       const idx = products.findIndex(p=>p.id === id);
       if (idx === -1) return res.status(404).json({ error:'Not found' });
+
  codex/add-github-storage-service-for-catalog-6t7hvp
       const updates = {
         name: body.name,
@@ -495,6 +506,7 @@ async function start() {
       const idx = products.findIndex(p=>p.id === id);
       if (idx === -1) return res.status(404).json({ error:'Not found' });
       products.splice(idx,1);
+
 
       products.splice(idx,1);
       await store.save({ ...catalog, products });
@@ -515,11 +527,13 @@ async function start() {
         const p = products.find(prod=>prod.id === id);
         if (p) p.sortOrder = i+1;
       }
+
  main
       await store.save({ ...catalog, products });
       res.json({ ok:true });
     }catch(err){
       console.error(err);
+
  codex/add-github-storage-service-for-catalog-6t7hvp
       res.status(500).json({ error:'Erro ao excluir produto' });
     }
@@ -556,7 +570,7 @@ async function start() {
   });
 
   app.listen(PORT, '0.0.0.0', () => console.log(`Server up on :${PORT}`));
-=======
+
     }
   });
 
@@ -571,7 +585,7 @@ async function start() {
   });
 
   app.listen(PORT, '0.0.0.0', () => console.log(`Server up on :${PORT}`));
-=======
+
       res.status(500).json({ error:'Erro ao reordenar' });
     }
   });
@@ -810,7 +824,6 @@ async function start() {
 }
 
  codex/add-github-storage-service-for-catalog-ymiwro
-=======
  codex/add-github-storage-service-for-catalog-6t7hvp
 
  main
