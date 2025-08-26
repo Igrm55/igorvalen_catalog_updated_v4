@@ -1,3 +1,7 @@
+ codex/add-github-storage-service-for-catalog-4ccyzw
+'use strict';
+
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
 'use strict';
 
@@ -30,6 +34,7 @@ codex/add-github-storage-service-for-catalog-ylqm88
  main
  main
  main
+ main
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -39,7 +44,10 @@ const store = require('./services/githubStore');
 
 async function start() {
   try {
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
+ main
     await store.load();
     console.log('[catalog] cache loaded (github or memory fallback)');
 
@@ -94,6 +102,162 @@ async function start() {
       const order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
       return { id: 1, categoriesOrder: order };
     }
+ codex/add-github-storage-service-for-catalog-4ccyzw
+
+    // ---- Public API ----
+    app.get('/api/catalog', (req, res) => {
+      try {
+        const { q, category } = req.query;
+        const { products } = store.getCache();
+        let list = (products || []).filter(p => p.active !== false);
+        if (category) list = list.filter(p => p.category === category);
+        if (q) {
+          const s = String(q).toLowerCase();
+          list = list.filter(p =>
+            (p.name || '').toLowerCase().includes(s) ||
+            (p.codes || '').toLowerCase().includes(s) ||
+            (p.category || '').toLowerCase().includes(s)
+          );
+        }
+        list = list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        res.json({ products: list, settings: getSettings() });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao carregar catálogo' });
+      }
+    });
+
+    // ---- Admin API ----
+    app.post('/api/login', (req, res) => {
+      const { password } = req.body || {};
+      res.json({ ok: password === '1234' });
+    });
+
+    app.get('/api/admin/products', (_req, res) => {
+      const { products } = store.getCache();
+      const sorted = [...(products || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      res.json(sorted);
+    });
+
+    app.get('/api/products/:id', (req, res) => {
+      const id = Number(req.params.id);
+      const { products } = store.getCache();
+      const item = (products || []).find(p => p.id === id);
+      if (!item) return res.status(404).json({ error: 'Not found' });
+      res.json(item);
+    });
+
+    app.post('/api/products', upload.single('image'), async (req, res) => {
+      try {
+        const body = req.body || {};
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        const nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+        const data = {
+          id: nextId,
+          name: body.name || '',
+          category: body.category || '',
+          codes: body.codes || null,
+          flavors: body.flavors || null,
+          imageUrl: req.file ? `/uploads/${req.file.filename}` : (body.imageUrl || null),
+          priceUV: normalizeNumber(body.priceUV),
+          priceUP: normalizeNumber(body.priceUP),
+          priceFV: normalizeNumber(body.priceFV),
+          priceFP: normalizeNumber(body.priceFP),
+          sortOrder: Number(body.sortOrder || products.length + 1),
+          active: body.active === 'false' ? false : true
+        };
+        products.push(data);
+        await store.save({ ...catalog, products });
+        res.json(data);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao criar produto' });
+      }
+    });
+
+    app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const body = req.body || {};
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        const idx = products.findIndex(p => p.id === id);
+        if (idx === -1) return res.status(404).json({ error: 'Not found' });
+
+        const updates = {
+          name: body.name,
+          category: body.category,
+          codes: body.codes ?? null,
+          flavors: body.flavors ?? null,
+          priceUV: normalizeNumber(body.priceUV),
+          priceUP: normalizeNumber(body.priceUP),
+          priceFV: normalizeNumber(body.priceFV),
+          priceFP: normalizeNumber(body.priceFP),
+          active: body.active === 'false' ? false : true
+        };
+        if (req.file) updates.imageUrl = `/uploads/${req.file.filename}`;
+
+        products[idx] = { ...products[idx], ...updates };
+        await store.save({ ...catalog, products });
+        res.json(products[idx]);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao atualizar produto' });
+      }
+    });
+
+    app.delete('/api/products/:id', async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        const idx = products.findIndex(p => p.id === id);
+        if (idx === -1) return res.status(404).json({ error: 'Not found' });
+        products.splice(idx, 1);
+        await store.save({ ...catalog, products });
+        res.json({ ok: true });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao excluir produto' });
+      }
+    });
+
+    app.post('/api/products/reorder', async (req, res) => {
+      try {
+        const ordered = req.body || [];
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        for (let i = 0; i < ordered.length; i++) {
+          const id = Number(ordered[i]);
+          const p = products.find(prod => prod.id === id);
+          if (p) p.sortOrder = i + 1;
+        }
+        await store.save({ ...catalog, products });
+        res.json({ ok: true });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao reordenar' });
+      }
+    });
+
+    // Fallback SPA
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    });
+
+    // Bind 0.0.0.0 p/ Render
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server up on :${PORT}`);
+    });
+  } catch (e) {
+    console.error('[bootstrap error]', e);
+    process.exit(1);
+  }
+}
+
+start();
+=======
 
     // ---- Public API ----
     app.get('/api/catalog', (req, res) => {
@@ -1119,4 +1283,4 @@ start();
 start();
  main
  main
- main
+ main main

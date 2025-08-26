@@ -1,4 +1,7 @@
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
+ main
 'use strict';
 
 const { Buffer } = require('buffer');
@@ -11,9 +14,18 @@ const filePath  = process.env.DATA_PATH   || 'data/catalogo.json';
 const token     = process.env.GITHUB_TOKEN || '';
 
 let fetchFn = global.fetch;
+ codex/add-github-storage-service-for-catalog-4ccyzw
+if (fetchFn) {
+  console.log('[githubStore] using global fetch');
+} else {
+  try {
+    ({ fetch: fetchFn } = require('undici'));
+    console.log('[githubStore] using undici fetch');
+=======
 if (!fetchFn) {
   try {
     ({ fetch: fetchFn } = require('undici'));
+ main
   } catch {
     // Último fallback (não deve acontecer em Node >=18, mas mantemos por segurança)
     throw new Error('Fetch indisponível. Instale "undici" ou use Node >= 18.');
@@ -63,6 +75,8 @@ async function putFile(obj, message = 'chore(data): update catalog') {
 
   const content = Buffer.from(JSON.stringify(obj, null, 2), 'utf8').toString('base64');
 
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
 =======
  codex/add-github-storage-service-for-catalog-63wtfu
 =======
@@ -242,10 +256,20 @@ async function putFile(obj, message = 'chore(data): update catalog') {
  main
  main
  main
+ main
   const body = {
     message,
     content,
     branch,
+ codex/add-github-storage-service-for-catalog-4ccyzw
+    sha,
+    committer: {
+      name:  process.env.DATA_COMMITTER_NAME  || 'Catalog Bot',
+      email: process.env.DATA_COMMITTER_EMAIL || 'bot@example.com'
+    }
+  };
+
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
     sha,
     committer: {
@@ -292,6 +316,7 @@ codex/add-github-storage-service-for-catalog-ymiwro
   };
 
  codex/add-github-storage-service-for-catalog-bcr19m
+ main
   const out = await httpJson(url, { method: 'PUT', body: JSON.stringify(body) });
   if (!out.ok) throw new Error(`GitHub putFile failed: ${out.status} ${out.statusText}`);
   return out.json?.content?.sha || null;
@@ -331,6 +356,8 @@ async function load() {
     mode  = 'memory';
     return cache;
   }
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
 =======
   const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}`;
   const res = await _fetch(url, { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
@@ -383,6 +410,7 @@ async function load() {
  main
   return cache;
  main
+ main
 }
 
 function getCache() {
@@ -391,7 +419,10 @@ function getCache() {
 }
 
 async function save(next) {
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
+ main
   cache = next;
   if (mode === 'github') {
     try {
@@ -404,6 +435,8 @@ async function save(next) {
     }
   }
   // em memória: apenas mantém
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
 =======
   await putFile(next, `chore(data): update at ${new Date().toISOString()}`);
   cache = ensureShape(next);
@@ -429,14 +462,18 @@ module.exports = { load, getCache, save };
  main
  main
  main
+ main
   return cache;
 }
 
 module.exports = { load, getCache, save };
+ codex/add-github-storage-service-for-catalog-4ccyzw
+=======
  codex/add-github-storage-service-for-catalog-bcr19m
 =======
  codex/add-github-storage-service-for-catalog-63wtfu
 =======
+ main
  main
  main
  main
