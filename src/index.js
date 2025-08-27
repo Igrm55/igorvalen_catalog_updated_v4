@@ -117,6 +117,7 @@ async function start() {
         const settings = catalog.settings || {};
         const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
 
+ codex/fix-data-persistence-issue-in-catalog-dkyvkr
         nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
 
         if (req.file) {
@@ -244,6 +245,8 @@ async function start() {
       }
     });
 
+=======
+ main
     app.post('/api/products/reorder', async (req, res) => {
       try {
         const ordered = req.body || [];
