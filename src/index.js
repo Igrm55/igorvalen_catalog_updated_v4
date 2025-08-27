@@ -109,11 +109,21 @@ async function start() {
     });
 
     app.post('/api/products', upload.single('image'), async (req, res) => {
+      let nextId;
       try {
         const body = req.body || {};
         const catalog = store.getCache();
         const products = catalog.products || [];
-        const nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+        const settings = catalog.settings || {};
+        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
+
+ codex/fix-data-persistence-issue-in-catalog-dkyvkr
+        nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+
+        if (req.file) {
+          await store.uploadImage(req.file.path, req.file.filename);
+        }
+
         const data = {
           id: nextId,
           name: body.name || '',
@@ -128,23 +138,46 @@ async function start() {
           sortOrder: Number(body.sortOrder || products.length + 1),
           active: body.active === 'false' ? false : true
         };
-        products.push(data);
-        await store.save({ ...catalog, products });
+        const updatedProducts = [...products, data];
+        if (data.category && !order.includes(data.category)) order.push(data.category);
+
+        await store.save({ products: updatedProducts, settings: { ...settings, categoriesOrder: order } });
         res.json(data);
       } catch (err) {
         console.error(err);
+        // rollback if product was staged
+        try {
+          const catalog = store.getCache();
+          const products = catalog.products || [];
+          const idx = products.findIndex(p => p.id === nextId);
+          if (idx !== -1) products.splice(idx, 1);
+        } catch {}
+        if (req.file) {
+          try { await store.deleteImage(req.file.filename); } catch {}
+        }
         res.status(500).json({ error: 'Erro ao criar produto' });
       }
     });
 
     app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+      let newFile = null;
+      let oldProduct;
       try {
         const id = Number(req.params.id);
         const body = req.body || {};
         const catalog = store.getCache();
         const products = catalog.products || [];
+        const settings = catalog.settings || {};
+        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
         const idx = products.findIndex(p => p.id === id);
         if (idx === -1) return res.status(404).json({ error: 'Not found' });
+
+        oldProduct = { ...products[idx] };
+
+        if (req.file) {
+          newFile = req.file.filename;
+          await store.uploadImage(req.file.path, newFile);
+        }
 
         const updates = {
           name: body.name,
@@ -160,30 +193,60 @@ async function start() {
         if (req.file) updates.imageUrl = `/uploads/${req.file.filename}`;
 
         products[idx] = { ...products[idx], ...updates };
-        await store.save({ ...catalog, products });
+        if (updates.category && !order.includes(updates.category)) order.push(updates.category);
+
+        await store.save({ products, settings: { ...settings, categoriesOrder: order } });
+
+        if (req.file && oldProduct.imageUrl && oldProduct.imageUrl.startsWith('/uploads/')) {
+          store.deleteImage(oldProduct.imageUrl.replace('/uploads/', '')).catch(() => {});
+        }
+
         res.json(products[idx]);
       } catch (err) {
         console.error(err);
+        try {
+          const catalog = store.getCache();
+          const products = catalog.products || [];
+          if (oldProduct) {
+            const idx = products.findIndex(p => p.id === oldProduct.id);
+            if (idx !== -1) products[idx] = oldProduct;
+          }
+        } catch {}
+        if (newFile) {
+          try { await store.deleteImage(newFile); } catch {}
+        }
         res.status(500).json({ error: 'Erro ao atualizar produto' });
       }
     });
 
     app.delete('/api/products/:id', async (req, res) => {
+      let removed;
+      let idx;
       try {
         const id = Number(req.params.id);
         const catalog = store.getCache();
         const products = catalog.products || [];
-        const idx = products.findIndex(p => p.id === id);
+        idx = products.findIndex(p => p.id === id);
         if (idx === -1) return res.status(404).json({ error: 'Not found' });
-        products.splice(idx, 1);
+        removed = products.splice(idx, 1)[0];
         await store.save({ ...catalog, products });
+        if (removed.imageUrl && removed.imageUrl.startsWith('/uploads/')) {
+          store.deleteImage(removed.imageUrl.replace('/uploads/', '')).catch(() => {});
+        }
         res.json({ ok: true });
       } catch (err) {
         console.error(err);
+        if (removed) {
+          const catalog = store.getCache();
+          const products = catalog.products || [];
+          products.splice(idx, 0, removed);
+        }
         res.status(500).json({ error: 'Erro ao excluir produto' });
       }
     });
 
+=======
+ main
     app.post('/api/products/reorder', async (req, res) => {
       try {
         const ordered = req.body || [];

@@ -12,10 +12,14 @@
     "cors": "^2.8.5",
     "multer": "^1.4.5-lts.2",
     "undici": "^6.19.8"
+ codex/fix-data-persistence-issue-in-catalog-dkyvkr
+=======
   },
   "devDependencies": {
     "prisma": "^5.22.0"
+ main
   },
+  "devDependencies": {},
   "engines": {
     "node": ">=18"
   }
