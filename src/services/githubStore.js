@@ -1,36 +1,22 @@
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
- codex/add-github-storage-service-for-catalog-bcr19m
- main
-'use strict';
+"use strict";
 
-const { Buffer } = require('buffer');
-
-const GITHUB_API = 'https://api.github.com';
-
-const ownerRepo = process.env.DATA_REPO;               // ex: "lgrm55/catalogo-data"
-const branch    = process.env.DATA_BRANCH || 'main';   // ex: "main"
-const filePath  = process.env.DATA_PATH   || 'data/catalogo.json';
-const token     = process.env.GITHUB_TOKEN || '';
+const { Buffer } = require("buffer");
+const fs = require("fs");
+const path = require("path");
 
 let fetchFn = global.fetch;
- codex/add-github-storage-service-for-catalog-4ccyzw
-if (fetchFn) {
-  console.log('[githubStore] using global fetch');
-} else {
-  try {
-    ({ fetch: fetchFn } = require('undici'));
-    console.log('[githubStore] using undici fetch');
-=======
 if (!fetchFn) {
-  try {
-    ({ fetch: fetchFn } = require('undici'));
- main
-  } catch {
-    // Último fallback (não deve acontecer em Node >=18, mas mantemos por segurança)
-    throw new Error('Fetch indisponível. Instale "undici" ou use Node >= 18.');
-  }
+  try { ({ fetch: fetchFn } = require('undici')); }
+  catch (err) { throw new Error('Fetch API unavailable'); }
 }
+
+const GITHUB_API = "https://api.github.com";
+const ownerRepo = process.env.DATA_REPO; // e.g. "user/repo"
+const branch = process.env.DATA_BRANCH || "main";
+const filePath = process.env.DATA_PATH || "data/catalogo.json";
+const token = process.env.GITHUB_TOKEN || "";
+const uploadsPath = "data/uploads";
+const localUploadsDir = path.join(__dirname, "..", "..", "public", "uploads");
 
 function headers() {
   const h = {
@@ -45,14 +31,13 @@ async function httpJson(url, init = {}) {
   const res = await fetchFn(url, { ...init, headers: { ...headers(), ...(init.headers || {}) } });
   const text = await res.text();
   let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { /* deixa json=null */ }
-  return { ok: res.ok, status: res.status, statusText: res.statusText, json, raw: text };
+  try { json = text ? JSON.parse(text) : null; } catch {}
+  return { ok: res.ok, status: res.status, statusText: res.statusText, json };
 }
 
 async function getFile() {
   if (!ownerRepo) throw new Error('DATA_REPO ausente');
   const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
-
   const out = await httpJson(url);
   if (out.ok) {
     const meta = out.json;
@@ -60,357 +45,71 @@ async function getFile() {
     return { sha: meta.sha, json: JSON.parse(content || '{}') };
   }
   if (out.status === 404) {
-    // arquivo ainda não existe — tratamos como novo
     return { sha: undefined, json: null };
   }
-  throw new Error(`GitHub getFile failed: ${out.status} ${out.statusText}`);
+  const apiMsg = out.json?.message ? ` - ${out.json.message}` : '';
+  throw new Error(`GitHub getFile failed: ${out.status} ${out.statusText}${apiMsg}`);
 }
 
 async function putFile(obj, message = 'chore(data): update catalog') {
   if (!ownerRepo) throw new Error('DATA_REPO ausente');
   const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}`;
-
   let sha;
   try { sha = (await getFile()).sha; } catch { sha = undefined; }
-
   const content = Buffer.from(JSON.stringify(obj, null, 2), 'utf8').toString('base64');
-
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
-=======
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
- codex/add-github-storage-service-for-catalog-d0sknz
- main
- main
- main
- main
-// Store do catálogo usando GitHub Contents API (CommonJS)
-
-// fetch compat: usa global.fetch se existir; senão, undici
-let _fetch = globalThis.fetch;
-if (_fetch) {
-  console.log('[githubStore] using global fetch');
-} else {
-  try {
-    ({ fetch: _fetch } = require('undici'));
-    console.log('[githubStore] using undici fetch');
-  } catch (err) {
-    console.error('[githubStore] fetch not available', err);
-    throw new Error('Fetch não disponível e undici não instalado');
-  }
-}
-
-const GITHUB_API = 'https://api.github.com';
-const ownerRepo = process.env.DATA_REPO;            // ex: "lgrm55/catalogo-data"
-codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
-const ownerRepo = process.env.DATA_REPO;            // ex: "Igrm55/catalogo-data"
- main
- main
-const branch = process.env.DATA_BRANCH || 'main';
-const filePath = process.env.DATA_PATH || 'data/catalogo.json';
-const token = process.env.GITHUB_TOKEN;
-
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
-
-const GITHUB_API = 'https://api.github.com';
-
-const ownerRepo = process.env.DATA_REPO;            // ex: "Igrm55/catalogo-data"
-const branch    = process.env.DATA_BRANCH || 'main';
-const filePath  = process.env.DATA_PATH   || 'data/catalogo.json';
-const token     = process.env.GITHUB_TOKEN;
-
-// fetch compat (Node 18+ tem global.fetch; se não tiver, usa undici)
-let _fetch = global.fetch;
-if (!_fetch) {
-  try {
-    ({ fetch: _fetch } = require('undici'));
-  } catch (err) {
-    throw new Error('Fetch não disponível. Instale "undici" ou use Node 18+ com global.fetch.');
-  }
-}
-
- main
- main
- main
- main
- main
-function headers() {
-  return {
-    Authorization: `Bearer ${token}`,
-    'User-Agent': 'catalogo-app',
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
- codex/add-github-storage-service-for-catalog-d0sknz
- main
- main
- main
- main
-    'Content-Type': 'application/json',
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-  };
-}
-
-function ensureShape(json) {
-  if (!json || typeof json !== 'object') {
-    return { products: [], settings: { categoriesOrder: [] } };
-  }
-  if (!Array.isArray(json.products)) json.products = [];
-  if (!json.settings || typeof json.settings !== 'object') {
-    json.settings = { categoriesOrder: [] };
-  }
-  if (!Array.isArray(json.settings.categoriesOrder)) {
-    json.settings.categoriesOrder = [];
-  }
-  return json;
-}
-
-async function getFileMeta() {
-  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
-  const res = await _fetch(url, { headers: headers() });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GitHub getFileMeta failed: ${res.status} ${res.statusText}`);
-  return res.json();
-}
-
-async function getFile() {
-  const meta = await getFileMeta();
-  if (!meta) return { sha: null, json: null };
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
-
-    'Content-Type': 'application/json'
-  };
-}
-
-async function getFile() {
-  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
-  const res = await _fetch(url, { headers: headers() });
-  if (!res.ok) throw new Error(`GitHub getFile failed: ${res.status} ${res.statusText}`);
-  const meta = await res.json();
- main
- main
- main
- main
- main
-  const content = Buffer.from(meta.content, meta.encoding).toString('utf8');
-  return { sha: meta.sha, json: JSON.parse(content) };
-}
-
-async function putFile(obj, message = 'chore(data): update catalog') {
-  const normalized = ensureShape(obj);
-  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
-  const meta = await getFileMeta(); // pega sha se já existir
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
-  const normalized = ensureShape(obj);
-  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
-  const meta = await getFileMeta(); // pega sha se já existir
- codex/add-github-storage-service-for-catalog-6t7hvp
-  const normalized = ensureShape(obj);
-  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
-  const meta = await getFileMeta(); // pega sha se já existir
-
- codex/add-github-storage-service-for-catalog-d0sknz
-  const normalized = ensureShape(obj);
-  const content = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8').toString('base64');
-  const meta = await getFileMeta(); // pega sha se já existir
-
-  const content = Buffer.from(JSON.stringify(obj, null, 2), 'utf8').toString('base64');
-
-  // tenta pegar SHA; se o arquivo ainda não existe, segue sem SHA
-  let sha;
-  try { sha = (await getFile()).sha; } catch (_) { sha = undefined; }
-
- main
- main
- main
- main
- main
- main
- main
-  const body = {
-    message,
-    content,
-    branch,
- codex/add-github-storage-service-for-catalog-4ccyzw
-    sha,
-    committer: {
-      name:  process.env.DATA_COMMITTER_NAME  || 'Catalog Bot',
-      email: process.env.DATA_COMMITTER_EMAIL || 'bot@example.com'
-    }
-  };
-
-=======
- codex/add-github-storage-service-for-catalog-bcr19m
-    sha,
-    committer: {
-      name:  process.env.DATA_COMMITTER_NAME  || 'Catalog Bot',
-=======
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
- codex/add-github-storage-service-for-catalog-d0sknz
- main
- main
- main
- main
-    sha: meta ? meta.sha : undefined,
-    committer: {
-      name: process.env.DATA_COMMITTER_NAME || 'Catalog Bot',
-      email: process.env.DATA_COMMITTER_EMAIL || 'bot@example.com'
-    }
-  };
-  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}`;
-  const res = await _fetch(url, {
-    method: 'PUT',
-    headers: headers(),
-    body: JSON.stringify(body)
-  });
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
-codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
-
-    sha,
-    committer: {
-      name:  process.env.DATA_COMMITTER_NAME || 'Catalog Bot',
- main
-      email: process.env.DATA_COMMITTER_EMAIL || 'bot@example.com'
-    }
-  };
-
- codex/add-github-storage-service-for-catalog-bcr19m
- main
+  const body = { message, content, branch, sha };
   const out = await httpJson(url, { method: 'PUT', body: JSON.stringify(body) });
-  if (!out.ok) throw new Error(`GitHub putFile failed: ${out.status} ${out.statusText}`);
-  return out.json?.content?.sha || null;
+  if (!out.ok) {
+    const apiMsg = out.json?.message ? ` - ${out.json.message}` : '';
+    throw new Error(`GitHub putFile failed: ${out.status} ${out.statusText}${apiMsg}`);
+  }
+  return out.json.content.sha;
 }
 
-// -------------- cache em memória + modo de operação --------------
+function ensureShape(obj) {
+  let cats = [];
+  const raw = obj?.settings?.categoriesOrder;
+  if (Array.isArray(raw)) cats = raw;
+  else if (typeof raw === "string") {
+    cats = raw.split("|").map(s => s.trim()).filter(Boolean);
+  }
+  return {
+    products: Array.isArray(obj?.products) ? obj.products : [],
+    settings: { categoriesOrder: cats }
+  };
+}
+
 let cache = null;
-let mode  = 'github'; // 'github' | 'memory'
-
-function defaultCatalog() {
-  return { products: [], settings: { categoriesOrder: [] } };
-}
+let mode = 'github';
 
 async function load() {
   try {
-    const got = await getFile();
-    if (got.json == null) {
-      // não existia — cria vazio no GitHub
-      const initial = defaultCatalog();
-      await putFile(initial, 'chore(data): initialize catalog');
+    const { json } = await getFile();
+    if (!json) {
+      const initial = {
+        products: [],
+        settings: {
+          categoriesOrder: [
+            'Bebidas não alcoólicas',
+            'Bebidas alcoólicas',
+            'Bomboneire',
+            'Cigarro',
+            'Utilidades'
+          ]
+        }
+      };
+      await putFile(initial, 'chore(data): init catalog');
       cache = initial;
     } else {
-      cache = got.json;
-      // saneamento mínimo
-      cache.products = Array.isArray(cache.products) ? cache.products : [];
-      cache.settings = cache.settings || { categoriesOrder: [] };
-      cache.settings.categoriesOrder = Array.isArray(cache.settings.categoriesOrder)
-        ? cache.settings.categoriesOrder
-        : [];
+      cache = ensureShape(json);
     }
-    mode = 'github';
-    console.log('[githubStore] loaded from GitHub');
-    return cache;
+    await restoreImages();
   } catch (err) {
-    console.warn('[githubStore] GitHub unavailable, falling back to memory:', err.message);
-    cache = defaultCatalog();
-    mode  = 'memory';
-    return cache;
+    console.error('[githubStore] GitHub unavailable, falling back to memory:', err);
+    cache = { products: [], settings: { categoriesOrder: [] } };
+    mode = 'memory';
   }
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
-=======
-  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(filePath)}`;
-  const res = await _fetch(url, { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
- main
- main
- main
- main
- main
-  if (!res.ok) throw new Error(`GitHub putFile failed: ${res.status} ${res.statusText}`);
-  const out = await res.json();
-  return out.content.sha;
-}
-
-let cache = null;
-
-async function load() {
-  const { json } = await getFile();
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
- codex/add-github-storage-service-for-catalog-d0sknz
- main
- main
- main
- main
-  if (!json) {
-    const initial = { products: [], settings: { categoriesOrder: [] } };
-    await putFile(initial, 'chore(data): init catalog');
-    cache = initial;
-    return cache;
-  }
-  cache = ensureShape(json);
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
- codex/add-github-storage-service-for-catalog-6t7hvp
-
-
-  cache = json;
- main
- main
- main
- main
- main
   return cache;
- main
- main
 }
 
 function getCache() {
@@ -419,61 +118,70 @@ function getCache() {
 }
 
 async function save(next) {
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
- codex/add-github-storage-service-for-catalog-bcr19m
- main
-  cache = next;
-  if (mode === 'github') {
+  cache = ensureShape(next);
+  if (mode !== 'github') throw new Error('GitHub persistence not available');
+  await putFile(cache, `chore(data): update at ${new Date().toISOString()}`);
+  return cache;
+}
+
+async function uploadImage(localPath, fileName) {
+  if (mode !== 'github') throw new Error('GitHub persistence not available');
+  const fullPath = `${uploadsPath}/${fileName}`;
+  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(fullPath)}`;
+  const data = await fs.promises.readFile(localPath);
+  let sha;
+  try {
+    const existing = await httpJson(`${url}?ref=${branch}`);
+    if (existing.ok) sha = existing.json.sha;
+  } catch {}
+  const body = {
+    message: `chore(image): upload ${fileName}`,
+    content: data.toString('base64'),
+    branch,
+    sha
+  };
+  const out = await httpJson(url, { method: 'PUT', body: JSON.stringify(body) });
+  if (!out.ok) {
+    const apiMsg = out.json?.message ? ` - ${out.json.message}` : '';
+    throw new Error(`GitHub uploadImage failed: ${out.status} ${out.statusText}${apiMsg}`);
+  }
+}
+
+async function deleteImage(fileName) {
+  if (mode !== 'github') return;
+  const fullPath = `${uploadsPath}/${fileName}`;
+  const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(fullPath)}`;
+  try {
+    const meta = await httpJson(`${url}?ref=${branch}`);
+    if (!meta.ok) return;
+    await httpJson(url, {
+      method: 'DELETE',
+      body: JSON.stringify({ message: `chore(image): delete ${fileName}`, sha: meta.json.sha, branch })
+    });
+  } catch (err) {
+    console.warn('[githubStore] deleteImage failed:', err);
+  }
+}
+
+async function restoreImages() {
+  if (mode !== 'github') return;
+  fs.mkdirSync(localUploadsDir, { recursive: true });
+  for (const p of cache.products) {
+    if (!p.imageUrl || !p.imageUrl.startsWith('/uploads/')) continue;
+    const fileName = p.imageUrl.replace('/uploads/', '');
+    const localFile = path.join(localUploadsDir, fileName);
+    if (fs.existsSync(localFile)) continue;
     try {
-      await putFile(next, `chore(data): update at ${new Date().toISOString()}`);
-      return cache;
+      const url = `${GITHUB_API}/repos/${ownerRepo}/contents/${encodeURIComponent(uploadsPath + '/' + fileName)}?ref=${branch}`;
+      const out = await httpJson(url);
+      if (out.ok) {
+        const buf = Buffer.from(out.json.content || '', out.json.encoding || 'base64');
+        await fs.promises.writeFile(localFile, buf);
+      }
     } catch (err) {
-      console.warn('[githubStore] save to GitHub failed (keeping memory):', err.message);
-      mode = 'memory';
-      return cache;
+      console.warn('[githubStore] restore image failed:', fileName, err);
     }
   }
-  // em memória: apenas mantém
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
-=======
-  await putFile(next, `chore(data): update at ${new Date().toISOString()}`);
-  cache = ensureShape(next);
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- codex/add-github-storage-service-for-catalog-r0klsc
-  return cache;
 }
 
-module.exports = { load, getCache, save };
-=======
- codex/add-github-storage-service-for-catalog-ymiwro
-  cache = ensureShape(next);
- codex/add-github-storage-service-for-catalog-6t7hvp
-  cache = ensureShape(next);
-
- codex/add-github-storage-service-for-catalog-d0sknz
-  cache = ensureShape(next);
-
-  cache = next;
- main
- main
- main
- main
- main
- main
-  return cache;
-}
-
-module.exports = { load, getCache, save };
- codex/add-github-storage-service-for-catalog-4ccyzw
-=======
- codex/add-github-storage-service-for-catalog-bcr19m
-=======
- codex/add-github-storage-service-for-catalog-63wtfu
-=======
- main
- main
- main
- main
+module.exports = { load, getCache, save, uploadImage, deleteImage };
