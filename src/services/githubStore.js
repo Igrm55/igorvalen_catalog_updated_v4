@@ -43,7 +43,8 @@ async function getFile() {
   if (out.status === 404) {
     return { sha: undefined, json: null };
   }
-  throw new Error(`GitHub getFile failed: ${out.status} ${out.statusText}`);
+  const apiMsg = out.json?.message ? ` - ${out.json.message}` : '';
+  throw new Error(`GitHub getFile failed: ${out.status} ${out.statusText}${apiMsg}`);
 }
 
 async function putFile(obj, message = 'chore(data): update catalog') {
@@ -54,7 +55,14 @@ async function putFile(obj, message = 'chore(data): update catalog') {
   const content = Buffer.from(JSON.stringify(obj, null, 2), 'utf8').toString('base64');
   const body = { message, content, branch, sha };
   const out = await httpJson(url, { method: 'PUT', body: JSON.stringify(body) });
+ codex/fix-data-persistence-issue-in-catalog-kwga6o
+  if (!out.ok) {
+    const apiMsg = out.json?.message ? ` - ${out.json.message}` : '';
+    throw new Error(`GitHub putFile failed: ${out.status} ${out.statusText}${apiMsg}`);
+  }
+=======
   if (!out.ok) throw new Error(`GitHub putFile failed: ${out.status} ${out.statusText}`);
+ main
   return out.json.content.sha;
 }
 
@@ -83,7 +91,11 @@ async function load() {
       cache = ensureShape(json);
     }
   } catch (err) {
+ codex/fix-data-persistence-issue-in-catalog-kwga6o
+    console.error('[githubStore] GitHub unavailable, falling back to memory:', err);
+=======
     console.warn('[githubStore] GitHub unavailable, falling back to memory:', err.message);
+ main
     cache = { products: [], settings: { categoriesOrder: [] } };
     mode = 'memory';
   }
@@ -101,7 +113,7 @@ async function save(next) {
     try {
       await putFile(cache, `chore(data): update at ${new Date().toISOString()}`);
     } catch (err) {
-      console.warn('[githubStore] save to GitHub failed (keeping memory):', err.message);
+      console.error('[githubStore] save to GitHub failed (keeping memory):', err);
       mode = 'memory';
     }
   }
