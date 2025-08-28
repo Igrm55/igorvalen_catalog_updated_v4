@@ -1,4 +1,5 @@
 'use strict';
+
 // server bootstrap entry point
 
 const path = require('path');
@@ -6,11 +7,11 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const store = require('./services/githubStore');
+const productService = require('./services/productService');
 
 async function start() {
   try {
-    await store.load();
+    await productService.load();
     console.log('[catalog] cache loaded (github or memory fallback)');
 
     const app = express();
@@ -51,26 +52,12 @@ async function start() {
       })
     });
 
-    // Helpers
-    function normalizeNumber(val) {
-      if (val === undefined || val === null || val === '') return null;
-      if (typeof val === 'number') return val;
-      const s = String(val).replace('.', '').replace(',', '.');
-      const f = parseFloat(s);
-      return Number.isNaN(f) ? null : f;
-    }
-    function getSettings() {
-      const { settings } = store.getCache();
-      const order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
-      return { id: 1, categoriesOrder: order };
-    }
-
     // ---- Public API ----
-    app.get('/api/catalog', (req, res) => {
+    app.get('/api/catalog', async (req, res) => {
       try {
         const { q, category } = req.query;
-        const { products } = store.getCache();
-        let list = (products || []).filter(p => p.active !== false);
+        let list = await productService.getAll();
+        list = list.filter(p => p.active !== false);
         if (category) list = list.filter(p => p.category === category);
         if (q) {
           const s = String(q).toLowerCase();
@@ -81,7 +68,8 @@ async function start() {
           );
         }
         list = list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        res.json({ products: list, settings: getSettings() });
+        const settings = productService.getSettings();
+        res.json({ products: list, settings });
       } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Erro ao carregar catálogo' });
@@ -94,170 +82,71 @@ async function start() {
       res.json({ ok: password === '1234' });
     });
 
-    app.get('/api/admin/products', (_req, res) => {
-      const { products } = store.getCache();
-      const sorted = [...(products || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    app.get('/api/admin/products', async (_req, res) => {
+      const list = await productService.getAll();
+      const sorted = [...list].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
       res.json(sorted);
     });
 
-    app.get('/api/products/:id', (req, res) => {
+    app.get('/api/products/:id', async (req, res) => {
       const id = Number(req.params.id);
-      const { products } = store.getCache();
-      const item = (products || []).find(p => p.id === id);
+      const item = await productService.getById(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
       res.json(item);
     });
 
     app.post('/api/products', upload.single('image'), async (req, res) => {
-      let nextId;
+      const body = req.body || {};
+      if (!body.name || !body.category) {
+        if (req.file) await productService.discardUpload(req.file.filename);
+        return res.status(400).json({ error: 'Invalid payload' });
+      }
       try {
-        const body = req.body || {};
-        const catalog = store.getCache();
-        const products = catalog.products || [];
-        const settings = catalog.settings || {};
-        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-
- codex/fix-data-persistence-issue-in-catalog-dkyvkr
-        nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
-
-        if (req.file) {
-          await store.uploadImage(req.file.path, req.file.filename);
-        }
-
-        const data = {
-          id: nextId,
-          name: body.name || '',
-          category: body.category || '',
-          codes: body.codes || null,
-          flavors: body.flavors || null,
-          imageUrl: req.file ? `/uploads/${req.file.filename}` : (body.imageUrl || null),
-          priceUV: normalizeNumber(body.priceUV),
-          priceUP: normalizeNumber(body.priceUP),
-          priceFV: normalizeNumber(body.priceFV),
-          priceFP: normalizeNumber(body.priceFP),
-          sortOrder: Number(body.sortOrder || products.length + 1),
-          active: body.active === 'false' ? false : true
-        };
-        const updatedProducts = [...products, data];
-        if (data.category && !order.includes(data.category)) order.push(data.category);
-
-        await store.save({ products: updatedProducts, settings: { ...settings, categoriesOrder: order } });
-        res.json(data);
+        const data = await productService.create(body, req.file);
+        res.status(201).json(data);
       } catch (err) {
         console.error(err);
-        // rollback if product was staged
-        try {
-          const catalog = store.getCache();
-          const products = catalog.products || [];
-          const idx = products.findIndex(p => p.id === nextId);
-          if (idx !== -1) products.splice(idx, 1);
-        } catch {}
-        if (req.file) {
-          try { await store.deleteImage(req.file.filename); } catch {}
-        }
         res.status(500).json({ error: 'Erro ao criar produto' });
       }
     });
 
     app.put('/api/products/:id', upload.single('image'), async (req, res) => {
-      let newFile = null;
-      let oldProduct;
+      const body = req.body || {};
+      const id = Number(req.params.id);
+      if (!body.name || !body.category) {
+        if (req.file) await productService.discardUpload(req.file.filename);
+        return res.status(400).json({ error: 'Invalid payload' });
+      }
       try {
-        const id = Number(req.params.id);
-        const body = req.body || {};
-        const catalog = store.getCache();
-        const products = catalog.products || [];
-        const settings = catalog.settings || {};
-        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-        const idx = products.findIndex(p => p.id === id);
-        if (idx === -1) return res.status(404).json({ error: 'Not found' });
-
-        oldProduct = { ...products[idx] };
-
-        if (req.file) {
-          newFile = req.file.filename;
-          await store.uploadImage(req.file.path, newFile);
+        const data = await productService.update(id, body, req.file);
+        if (!data) {
+          if (req.file) await productService.discardUpload(req.file.filename);
+          return res.status(404).json({ error: 'Not found' });
         }
-
-        const updates = {
-          name: body.name,
-          category: body.category,
-          codes: body.codes ?? null,
-          flavors: body.flavors ?? null,
-          priceUV: normalizeNumber(body.priceUV),
-          priceUP: normalizeNumber(body.priceUP),
-          priceFV: normalizeNumber(body.priceFV),
-          priceFP: normalizeNumber(body.priceFP),
-          active: body.active === 'false' ? false : true
-        };
-        if (req.file) updates.imageUrl = `/uploads/${req.file.filename}`;
-
-        products[idx] = { ...products[idx], ...updates };
-        if (updates.category && !order.includes(updates.category)) order.push(updates.category);
-
-        await store.save({ products, settings: { ...settings, categoriesOrder: order } });
-
-        if (req.file && oldProduct.imageUrl && oldProduct.imageUrl.startsWith('/uploads/')) {
-          store.deleteImage(oldProduct.imageUrl.replace('/uploads/', '')).catch(() => {});
-        }
-
-        res.json(products[idx]);
+        res.json(data);
       } catch (err) {
         console.error(err);
-        try {
-          const catalog = store.getCache();
-          const products = catalog.products || [];
-          if (oldProduct) {
-            const idx = products.findIndex(p => p.id === oldProduct.id);
-            if (idx !== -1) products[idx] = oldProduct;
-          }
-        } catch {}
-        if (newFile) {
-          try { await store.deleteImage(newFile); } catch {}
-        }
         res.status(500).json({ error: 'Erro ao atualizar produto' });
       }
     });
 
     app.delete('/api/products/:id', async (req, res) => {
-      let removed;
-      let idx;
+      const id = Number(req.params.id);
       try {
-        const id = Number(req.params.id);
-        const catalog = store.getCache();
-        const products = catalog.products || [];
-        idx = products.findIndex(p => p.id === id);
-        if (idx === -1) return res.status(404).json({ error: 'Not found' });
-        removed = products.splice(idx, 1)[0];
-        await store.save({ ...catalog, products });
-        if (removed.imageUrl && removed.imageUrl.startsWith('/uploads/')) {
-          store.deleteImage(removed.imageUrl.replace('/uploads/', '')).catch(() => {});
-        }
+        const ok = await productService.remove(id);
+        if (!ok) return res.status(404).json({ error: 'Not found' });
         res.json({ ok: true });
       } catch (err) {
         console.error(err);
-        if (removed) {
-          const catalog = store.getCache();
-          const products = catalog.products || [];
-          products.splice(idx, 0, removed);
-        }
         res.status(500).json({ error: 'Erro ao excluir produto' });
       }
     });
 
-=======
- main
     app.post('/api/products/reorder', async (req, res) => {
+      const ordered = req.body || [];
+      if (!Array.isArray(ordered)) return res.status(400).json({ error: 'Invalid payload' });
       try {
-        const ordered = req.body || [];
-        const catalog = store.getCache();
-        const products = catalog.products || [];
-        for (let i = 0; i < ordered.length; i++) {
-          const id = Number(ordered[i]);
-          const p = products.find(prod => prod.id === id);
-          if (p) p.sortOrder = i + 1;
-        }
-        await store.save({ ...catalog, products });
+        await productService.reorder(ordered);
         res.json({ ok: true });
       } catch (err) {
         console.error(err);
@@ -267,7 +156,7 @@ async function start() {
 
     // Settings endpoint
     app.get('/api/settings', (_req, res) => {
-      res.json(getSettings());
+      res.json(productService.getSettings());
     });
 
     // Fallback SPA
@@ -286,3 +175,4 @@ async function start() {
 }
 
 start();
+
