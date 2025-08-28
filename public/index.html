@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -116,6 +117,157 @@
       reorderProducts: async (ids)=> (await fetch('/api/products/reorder',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ids) })).json(),
     };
 
+    async function exportCatalogImages(includePrices) {
+      try {
+        const data = await api.getCatalog();
+        const activeProducts = (data.products || []).filter(p => p.active !== false);
+        let categories = data.settings?.categoriesOrder || [];
+        if (!categories.length) {
+          categories = [...new Set(activeProducts.map(p => p.category))].sort();
+        }
+        const exportContainer = document.createElement('div');
+        exportContainer.style.position = 'fixed';
+        exportContainer.style.top = '-2000px';
+        exportContainer.style.left = '0';
+        exportContainer.style.width = '1080px';
+        exportContainer.style.height = '1920px';
+        exportContainer.style.backgroundColor = 'var(--brand-green)';
+        document.body.appendChild(exportContainer);
+
+        for (const category of categories) {
+          const items = activeProducts.filter(p => p.category === category);
+          if (!items.length) continue;
+          const pageSize = 8;
+          const pagesNeeded = Math.ceil(items.length / pageSize);
+          for (let pageIndex = 0; pageIndex < pagesNeeded; pageIndex++) {
+            const pageProducts = items.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+            exportContainer.innerHTML = '';
+
+            const logoImg = document.createElement('img');
+            logoImg.src = '/logo.png';
+            logoImg.alt = 'Logo';
+            logoImg.style.maxHeight = '100px';
+            logoImg.style.display = 'block';
+            logoImg.style.margin = '20px auto 10px auto';
+            logoImg.onerror = () => { logoImg.style.display = 'none'; };
+            exportContainer.appendChild(logoImg);
+
+            const title = document.createElement('h2');
+            title.textContent = category;
+            title.style.color = '#fff';
+            title.style.textAlign = 'center';
+            title.style.fontSize = '48px';
+            title.style.fontWeight = '700';
+            title.style.marginBottom = '20px';
+            title.style.textShadow = '1px 1px 3px rgba(0,0,0,0.5)';
+            exportContainer.appendChild(title);
+
+            const panel = document.createElement('div');
+            panel.style.margin = '0 20px';
+            panel.style.background = 'white';
+            panel.style.borderRadius = '30px';
+            panel.style.padding = '20px';
+            panel.style.boxSizing = 'border-box';
+            const grid = document.createElement('div');
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = '1fr 1fr';
+            grid.style.gap = '16px';
+            panel.appendChild(grid);
+            exportContainer.appendChild(panel);
+
+            pageProducts.forEach(product => {
+              const card = document.createElement('div');
+              card.style.background = 'white';
+              card.style.border = '1px solid #e5e7eb';
+              card.style.borderRadius = '16px';
+              card.style.padding = '10px';
+              card.style.display = 'flex';
+              card.style.flexDirection = 'column';
+              const img = document.createElement('img');
+              img.src = product.imageUrl || '/img/placeholder.png';
+              img.alt = product.name;
+              img.style.width = '100%';
+              img.style.height = '180px';
+              img.style.objectFit = 'contain';
+              card.appendChild(img);
+              const nameEl = document.createElement('h3');
+              nameEl.textContent = product.name;
+              nameEl.style.color = 'var(--brand-green)';
+              nameEl.style.fontWeight = '700';
+              nameEl.style.fontSize = '18px';
+              nameEl.style.marginTop = '8px';
+              card.appendChild(nameEl);
+              const codesEl = document.createElement('p');
+              codesEl.textContent = 'Códigos: ' + (product.codes || '-');
+              codesEl.style.fontSize = '12px';
+              codesEl.style.color = '#555';
+              card.appendChild(codesEl);
+              if (product.flavors) {
+                const flavEl = document.createElement('p');
+                flavEl.textContent = 'Sabores: ' + product.flavors;
+                flavEl.style.fontSize = '12px';
+                flavEl.style.color = '#555';
+                card.appendChild(flavEl);
+              }
+              if (includePrices) {
+                const priceCashUnit = product.priceUV != null ? `R$ ${Number(product.priceUV).toFixed(2)}` : null;
+                const priceCashPack = product.priceFV != null ? `R$ ${Number(product.priceFV).toFixed(2)}` : null;
+                const priceCredUnit = product.priceUP != null ? `R$ ${Number(product.priceUP).toFixed(2)}` : null;
+                const priceCredPack = product.priceFP != null ? `R$ ${Number(product.priceFP).toFixed(2)}` : null;
+                if (priceCashUnit || priceCashPack) {
+                  const el = document.createElement('p');
+                  el.textContent = 'À vista: ' + [priceCashUnit, priceCashPack].filter(Boolean).join(' / ');
+                  el.style.fontSize = '13px';
+                  el.style.fontWeight = '500';
+                  card.appendChild(el);
+                }
+                if (priceCredUnit || priceCredPack) {
+                  const el = document.createElement('p');
+                  el.textContent = 'A prazo: ' + [priceCredUnit, priceCredPack].filter(Boolean).join(' / ');
+                  el.style.fontSize = '13px';
+                  el.style.fontWeight = '500';
+                  card.appendChild(el);
+                }
+              }
+              grid.appendChild(card);
+            });
+
+            const canvas = await html2canvas(exportContainer, { useCORS: true });
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (blob) {
+              let fileName = category.replace(/[\/\\?%*:|"<>]/g, '_');
+              if (pagesNeeded > 1) fileName += `_${pageIndex+1}`;
+              fileName += '.png';
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }
+          }
+        }
+        document.body.removeChild(exportContainer);
+      } catch (err) {
+        console.error('Erro ao gerar catálogo como imagens:', err);
+        alert('Ocorreu um erro ao gerar as imagens do catálogo.');
+      }
+    }
+
+    const ExportOptionsModal = ({ onClose, onSelectOption }) => (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-xs">
+          <h2 className="text-lg font-bold mb-4 text-gray-800 text-center">Exportar Catálogo</h2>
+          <p className="text-sm text-gray-600 mb-6 text-center">Selecione uma opção:</p>
+          <button onClick={() => onSelectOption(true)} className="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 mb-3">Exportar com preços</button>
+          <button onClick={() => onSelectOption(false)} className="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 mb-3">Exportar sem preços</button>
+          <button onClick={onClose} className="w-full bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg mt-2">Cancelar</button>
+        </div>
+      </div>
+    );
+
     const AppProvider = ({children})=>{
       const [route, setRoute] = useState({name:'home', params:{}});
       const [isAdmin, setIsAdmin] = useState(false);
@@ -165,6 +317,7 @@
 
     const Header = ()=>{
       const { navigate, offline, toggleOffline } = useApp();
+      const [showExportOptions, setShowExportOptions] = useState(false);
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-24">
@@ -181,9 +334,16 @@
                 <span className="text-sm">Usar sem Wi-Fi</span>
                 <div onClick={toggleOffline} className={`toggle ${offline?'active':''}`}><div className="knob"></div></div>
               </div>
+              <button onClick={() => setShowExportOptions(true)} className="bg-blue-600 text-white font-semibold px-4 py-2 rounded-full shadow hover:bg-blue-700 transition-all transform hover:scale-105">Baixar catálogo</button>
               <button onClick={() => navigate('admin')} className="bg-white text-green-600 font-semibold px-4 py-2 rounded-full shadow hover:bg-gray-100 transition-all transform hover:scale-105">Área do&nbsp;Admin</button>
             </div>
           </div>
+          {showExportOptions && (
+            <ExportOptionsModal
+              onClose={() => setShowExportOptions(false)}
+              onSelectOption={(includePrices) => { setShowExportOptions(false); exportCatalogImages(includePrices); }}
+            />
+          )}
         </header>
       )
     };
@@ -554,7 +714,6 @@
       )
     };
 
-    // *** SOLUÇÃO PROFISSIONAL: AdminProductListPage com layout de cards para mobile ***
     const AdminProductListPage = ()=>{
       const { navigate } = useApp();
       const [products,setProducts]=useState([]);
