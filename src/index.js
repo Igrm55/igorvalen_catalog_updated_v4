@@ -1,7 +1,7 @@
 "use strict";
 
+// IgorValen catalog server bootstrap
 require('dotenv').config();
-// server bootstrap entry point
 
 const path = require('path');
 const fs = require('fs');

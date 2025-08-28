@@ -1,5 +1,6 @@
 "use strict";
 
+// GitHub-backed data persistence layer
 const { Buffer } = require("buffer");
 const fs = require("fs");
 const path = require("path");
