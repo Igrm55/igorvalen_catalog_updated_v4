@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node -e \"console.log('ok')\""
+    "test": "node --test"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -19,3 +19,4 @@
     "node": ">=18"
   }
 }
+
