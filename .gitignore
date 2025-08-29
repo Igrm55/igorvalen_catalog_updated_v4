@@ -129,7 +129,8 @@ dist
 .vscode-test
 
 # Uploaded product images
-public/uploads/
+public/uploads/*
+!public/uploads/.gitkeep
 
 # yarn v2
 .yarn/cache

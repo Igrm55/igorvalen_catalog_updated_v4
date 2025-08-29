@@ -1,34 +1,29 @@
 'use strict';
-// server bootstrap entry point
 
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const store = require('./services/githubStore');
+const store = require('./services/fileStore');
 
 async function start() {
   try {
     await store.load();
-    console.log('[catalog] cache loaded (github or memory fallback)');
+    console.log('[catalog] cache loaded');
 
     const app = express();
     const PORT = Number(process.env.PORT || 4000);
 
-    // pasta de uploads
     const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
     fs.mkdirSync(uploadDir, { recursive: true });
 
-    // middlewares
     app.use(cors());
     app.use(express.json({ limit: '2mb' }));
     app.use(express.urlencoded({ extended: true }));
 
-    // healthcheck
     app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-    // Evitar cache do HTML principal (contra SW/asset antigo)
     app.use((req, res, next) => {
       if (req.path === '/' || req.path === '/index.html') {
         res.set('Cache-Control', 'no-store');
@@ -36,10 +31,8 @@ async function start() {
       next();
     });
 
-    // arquivos estáticos
     app.use(express.static(path.join(__dirname, '..', 'public')));
 
-    // Upload (multer)
     const upload = multer({
       storage: multer.diskStorage({
         destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -51,7 +44,6 @@ async function start() {
       })
     });
 
-    // Helpers
     function normalizeNumber(val) {
       if (val === undefined || val === null || val === '') return null;
       if (typeof val === 'number') return val;
@@ -59,9 +51,13 @@ async function start() {
       const f = parseFloat(s);
       return Number.isNaN(f) ? null : f;
     }
+
     function getSettings() {
-      const { settings } = store.getCache();
-      const order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
+      const { products, settings } = store.getCache();
+      let order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
+      if (!order.length) {
+        order = [...new Set((products || []).map(p => p.category).filter(Boolean))].sort();
+      }
       return { id: 1, categoriesOrder: order };
     }
 
@@ -109,7 +105,6 @@ async function start() {
     });
 
     app.post('/api/products', upload.single('image'), async (req, res) => {
-      let nextId;
       try {
         const body = req.body || {};
         const catalog = store.getCache();
@@ -117,50 +112,40 @@ async function start() {
         const settings = catalog.settings || {};
         const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
 
- codex/fix-data-persistence-issue-in-catalog-dkyvkr
-        nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+        const nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-        if (req.file) {
-          await store.uploadImage(req.file.path, req.file.filename);
-        }
-
-        const data = {
+        const newProd = {
           id: nextId,
-          name: body.name || '',
-          category: body.category || '',
-          codes: body.codes || null,
-          flavors: body.flavors || null,
-          imageUrl: req.file ? `/uploads/${req.file.filename}` : (body.imageUrl || null),
+          name: body.name,
+          category: body.category,
+          codes: body.codes ?? null,
+          flavors: body.flavors ?? null,
           priceUV: normalizeNumber(body.priceUV),
           priceUP: normalizeNumber(body.priceUP),
           priceFV: normalizeNumber(body.priceFV),
           priceFP: normalizeNumber(body.priceFP),
-          sortOrder: Number(body.sortOrder || products.length + 1),
-          active: body.active === 'false' ? false : true
+          sortOrder: products.length + 1,
+          active: body.active === 'false' ? false : true,
+          imageUrl
         };
-        const updatedProducts = [...products, data];
-        if (data.category && !order.includes(data.category)) order.push(data.category);
 
-        await store.save({ products: updatedProducts, settings: { ...settings, categoriesOrder: order } });
-        res.json(data);
+        products.push(newProd);
+        if (newProd.category && !order.includes(newProd.category)) order.push(newProd.category);
+        await store.save({ products, settings: { ...settings, categoriesOrder: order } });
+
+        res.json(newProd);
       } catch (err) {
         console.error(err);
-        // rollback if product was staged
-        try {
-          const catalog = store.getCache();
-          const products = catalog.products || [];
-          const idx = products.findIndex(p => p.id === nextId);
-          if (idx !== -1) products.splice(idx, 1);
-        } catch {}
         if (req.file) {
-          try { await store.deleteImage(req.file.filename); } catch {}
+          fs.promises.unlink(req.file.path).catch(() => {});
         }
         res.status(500).json({ error: 'Erro ao criar produto' });
       }
     });
 
     app.put('/api/products/:id', upload.single('image'), async (req, res) => {
-      let newFile = null;
+      let newFile;
       let oldProduct;
       try {
         const id = Number(req.params.id);
@@ -176,7 +161,6 @@ async function start() {
 
         if (req.file) {
           newFile = req.file.filename;
-          await store.uploadImage(req.file.path, newFile);
         }
 
         const updates = {
@@ -190,7 +174,7 @@ async function start() {
           priceFP: normalizeNumber(body.priceFP),
           active: body.active === 'false' ? false : true
         };
-        if (req.file) updates.imageUrl = `/uploads/${req.file.filename}`;
+        if (req.file) updates.imageUrl = `/uploads/${newFile}`;
 
         products[idx] = { ...products[idx], ...updates };
         if (updates.category && !order.includes(updates.category)) order.push(updates.category);
@@ -198,7 +182,7 @@ async function start() {
         await store.save({ products, settings: { ...settings, categoriesOrder: order } });
 
         if (req.file && oldProduct.imageUrl && oldProduct.imageUrl.startsWith('/uploads/')) {
-          store.deleteImage(oldProduct.imageUrl.replace('/uploads/', '')).catch(() => {});
+          fs.promises.unlink(path.join(uploadDir, path.basename(oldProduct.imageUrl))).catch(() => {});
         }
 
         res.json(products[idx]);
@@ -213,7 +197,7 @@ async function start() {
           }
         } catch {}
         if (newFile) {
-          try { await store.deleteImage(newFile); } catch {}
+          fs.promises.unlink(path.join(uploadDir, newFile)).catch(() => {});
         }
         res.status(500).json({ error: 'Erro ao atualizar produto' });
       }
@@ -231,7 +215,7 @@ async function start() {
         removed = products.splice(idx, 1)[0];
         await store.save({ ...catalog, products });
         if (removed.imageUrl && removed.imageUrl.startsWith('/uploads/')) {
-          store.deleteImage(removed.imageUrl.replace('/uploads/', '')).catch(() => {});
+          fs.promises.unlink(path.join(uploadDir, path.basename(removed.imageUrl))).catch(() => {});
         }
         res.json({ ok: true });
       } catch (err) {
@@ -245,8 +229,6 @@ async function start() {
       }
     });
 
-=======
- main
     app.post('/api/products/reorder', async (req, res) => {
       try {
         const ordered = req.body || [];
@@ -265,17 +247,14 @@ async function start() {
       }
     });
 
-    // Settings endpoint
     app.get('/api/settings', (_req, res) => {
       res.json(getSettings());
     });
 
-    // Fallback SPA
     app.get('*', (_req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Bind 0.0.0.0 p/ deploy
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server up on :${PORT}`);
     });
