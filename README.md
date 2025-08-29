@@ -16,28 +16,32 @@ Simple product catalog with Node.js + Express backend and static frontend. Data 
 - Multer for file uploads
 
 ## Local Development
-1. **Install dependencies**
+1. **Configure environment**
+   ```bash
+   cp .env.example .env   # edit DATABASE_URL as needed
+   ```
+2. **Install dependencies**
    ```bash
    npm install
    ```
-2. **Generate Prisma client**
+3. **Generate Prisma client**
    ```bash
    npx prisma generate
    ```
-3. **Create database schema**
+4. **Create database schema**
    ```bash
    npx prisma db push
    ```
-4. **(Optional) Seed sample data**
+5. **(Optional) Seed sample data**
    ```bash
    npm run seed
    ```
-5. **Start the server**
+6. **Start the server**
    ```bash
    npm run dev
    # app on http://localhost:4000
    ```
-6. **Run tests**
+7. **Run tests**
    ```bash
    npm test
    ```
