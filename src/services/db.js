@@ -1,127 +1,66 @@
 'use strict';
 
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-const dataDir = path.join(__dirname, '..', '..', 'data');
-const dbFile = path.join(dataDir, 'catalog.db');
-fs.mkdirSync(dataDir, { recursive: true });
-
-const db = new sqlite3.Database(dbFile);
-
-function init() {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      db.run(`CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        category TEXT,
-        codes TEXT,
-        flavors TEXT,
-        priceUV REAL,
-        priceUP REAL,
-        priceFV REAL,
-        priceFP REAL,
-        sortOrder INTEGER,
-        active INTEGER DEFAULT 1,
-        imageUrl TEXT
-      )`);
-      db.run(`CREATE TABLE IF NOT EXISTS settings (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        categoriesOrder TEXT
-      )`, err => {
-        if (err) reject(err); else resolve();
-      });
-    });
-  });
+async function init() {
+  await prisma.$connect();
 }
 
-function mapRow(row) {
-  if (!row) return row;
-  return { ...row, active: row.active !== 0 };
+async function health() {
+  await prisma.$queryRaw`SELECT 1`;
 }
 
-function getProducts() {
-  return new Promise((resolve, reject) => {
-    db.all(`SELECT * FROM products`, (err, rows) => {
-      if (err) reject(err); else resolve(rows.map(mapRow));
-    });
-  });
+function mapProduct(p) {
+  if (!p) return p;
+  return { ...p, active: p.active !== false };
+}
+
+async function getProducts() {
+  const rows = await prisma.product.findMany();
+  return rows.map(mapProduct);
 }
 
 function getProduct(id) {
-  return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM products WHERE id = ?`, [id], (err, row) => {
-      if (err) reject(err); else resolve(mapRow(row));
-    });
-  });
+  return prisma.product.findUnique({ where: { id } }).then(mapProduct);
 }
 
-function insertProduct(p) {
-  return new Promise((resolve, reject) => {
-    const stmt = `INSERT INTO products (name, category, codes, flavors, priceUV, priceUP, priceFV, priceFP, sortOrder, active, imageUrl)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const params = [p.name, p.category, p.codes, p.flavors, p.priceUV, p.priceUP, p.priceFV, p.priceFP, p.sortOrder, p.active ? 1 : 0, p.imageUrl];
-    db.run(stmt, params, function (err) {
-      if (err) reject(err); else resolve(this.lastID);
-    });
-  });
+async function insertProduct(p) {
+  const created = await prisma.product.create({ data: p });
+  return created.id;
 }
 
 function updateProduct(id, p) {
-  return new Promise((resolve, reject) => {
-    const stmt = `UPDATE products SET name=?, category=?, codes=?, flavors=?, priceUV=?, priceUP=?, priceFV=?, priceFP=?, sortOrder=?, active=?, imageUrl=? WHERE id=?`;
-    const params = [p.name, p.category, p.codes, p.flavors, p.priceUV, p.priceUP, p.priceFV, p.priceFP, p.sortOrder, p.active ? 1 : 0, p.imageUrl, id];
-    db.run(stmt, params, function (err) {
-      if (err) reject(err); else resolve();
-    });
-  });
+  return prisma.product.update({ where: { id }, data: p });
 }
 
 function deleteProduct(id) {
-  return new Promise((resolve, reject) => {
-    db.run(`DELETE FROM products WHERE id=?`, [id], err => {
-      if (err) reject(err); else resolve();
-    });
-  });
+  return prisma.product.delete({ where: { id } });
 }
 
 function reorderProducts(order) {
-  return new Promise((resolve, reject) => {
-    const stmt = db.prepare(`UPDATE products SET sortOrder=? WHERE id=?`);
-    db.serialize(() => {
-      order.forEach((id, idx) => stmt.run([idx + 1, id]));
-      stmt.finalize(err => {
-        if (err) reject(err); else resolve();
-      });
-    });
-  });
+  const tx = order.map((id, idx) =>
+    prisma.product.update({ where: { id }, data: { sortOrder: idx + 1 } })
+  );
+  return prisma.$transaction(tx);
 }
 
-function getSettings() {
-  return new Promise((resolve, reject) => {
-    db.get(`SELECT categoriesOrder FROM settings WHERE id=1`, (err, row) => {
-      if (err) reject(err); else {
-        const val = row && row.categoriesOrder ? JSON.parse(row.categoriesOrder) : [];
-        resolve(Array.isArray(val) ? val : []);
-      }
-    });
-  });
+async function getSettings() {
+  const row = await prisma.setting.findUnique({ where: { id: 1 } });
+  return row && Array.isArray(row.categoriesOrder) ? row.categoriesOrder : [];
 }
 
 function saveSettings(order) {
-  return new Promise((resolve, reject) => {
-    const val = JSON.stringify(order || []);
-    db.run(`INSERT INTO settings (id, categoriesOrder) VALUES (1, ?)
-            ON CONFLICT(id) DO UPDATE SET categoriesOrder=excluded.categoriesOrder`, [val], err => {
-      if (err) reject(err); else resolve();
-    });
+  return prisma.setting.upsert({
+    where: { id: 1 },
+    update: { categoriesOrder: order },
+    create: { id: 1, categoriesOrder: order }
   });
 }
 
 module.exports = {
   init,
+  health,
   getProducts,
   getProduct,
   insertProduct,
@@ -131,4 +70,3 @@ module.exports = {
   getSettings,
   saveSettings
 };
-

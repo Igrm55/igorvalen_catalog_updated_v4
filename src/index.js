@@ -22,7 +22,14 @@ async function start() {
     app.use(express.json({ limit: '2mb' }));
     app.use(express.urlencoded({ extended: true }));
 
-    app.get('/healthz', (_req, res) => res.json({ ok: true }));
+    app.get('/health', async (_req, res) => {
+      try {
+        await db.health();
+        res.json({ ok: true });
+      } catch (e) {
+        res.status(500).json({ ok: false });
+      }
+    });
 
     app.use((req, res, next) => {
       if (req.path === '/' || req.path === '/index.html') {

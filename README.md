@@ -1,89 +1,76 @@
 # Catalog App
 
-A small full-stack product catalog. The server exposes a JSON API for managing products and serves a static single-page application from the `public` folder. Data is stored in a local **SQLite** database (`data/catalog.db`) and images are saved under `public/uploads`.
+Simple product catalog with Node.js + Express backend and static frontend. Data is persisted with **Prisma** and **PostgreSQL**, while product images are stored on disk.
 
 ## Architecture
-
-- **Backend:** Node.js 18+, Express, CORS and Multer for uploads
-- **Frontend:** Static assets (HTML, JS, CSS) served by the same Express instance
-- **Persistence:** SQLite database (`data/catalog.db`)
+- **Backend:** Node.js 18+, Express, Prisma Client
+- **Frontend:** static files served from `public/`
+- **Database:** PostgreSQL (`DATABASE_URL`)
+- **Uploads:** stored under `public/uploads`
 
 ## Tech Stack
-
 - Node.js
 - Express
-- Multer
+- Prisma ORM
+- PostgreSQL
+- Multer for file uploads
 
 ## Local Development
-
 1. **Install dependencies**
-
    ```bash
    npm install
    ```
-
-2. **(Optional) Seed sample data**
-
+2. **Generate Prisma client**
+   ```bash
+   npx prisma generate
+   ```
+3. **Create database schema**
+   ```bash
+   npx prisma db push
+   ```
+4. **(Optional) Seed sample data**
    ```bash
    npm run seed
    ```
-
-3. **Run backend/frontend**
-
+5. **Start the server**
    ```bash
-   npm start
-   # open http://localhost:4000
+   npm run dev
+   # app on http://localhost:4000
    ```
-
-   The first run creates `data/catalog.db`. No manual database setup is required.
-
-4. **Add your own products** – with the server running, POST to the API. Example (Linux/macOS):
-
-   ```bash
-   curl -X POST http://localhost:4000/api/products \
-     -H "Content-Type: application/json" \
-     -d '{"name":"Sample","category":"Demo","priceUV":1.99}'
-   ```
-
-   PowerShell (Windows):
-
-   ```powershell
-   curl -X POST http://localhost:4000/api/products `
-     -H "Content-Type: application/json" `
-     -d '{"name":"Sample","category":"Demo","priceUV":1.99}'
-   ```
-
-5. **Run tests**
-
+6. **Run tests**
    ```bash
    npm test
    ```
 
-## Deployment on Render
+## Rendering Deployment
+- Set environment variable `DATABASE_URL` to your managed PostgreSQL instance.
+- Optional: `PORT` (defaults to 4000).
+- Mount a persistent disk for `public/uploads` to retain images.
 
-Only the `PORT` environment variable is required. To persist the database and uploads across deploys, mount a disk for both `data` and `public/uploads`. Example `render.yaml`:
-
+Example `render.yaml`:
 ```yaml
 services:
   - type: web
     name: catalog
     env: node
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm run migrate:deploy && npm start
     envVars:
+      - key: DATABASE_URL
+        value: your-postgres-url
       - key: PORT
         value: 4000
     disk:
-      - name: data
-        mountPath: data
-        sizeGB: 1
       - name: uploads
         mountPath: public/uploads
         sizeGB: 1
 ```
 
 ## Maintenance
+- Run `npm run migrate:deploy` on new releases to apply migrations.
+- Back up your PostgreSQL database regularly.
+- Ensure the `public/uploads` directory is backed up or mounted to persistent storage.
+- For local development, use `npx prisma db push` for schema changes; in production use migrations only.
 
-- Back up the `data/catalog.db` file regularly
-- Back up the `public/uploads` directory or mount a persistent disk so product images survive restarts
-- For schema changes, apply migrations to the SQLite database
+## Health Check
+A simple route is exposed at `/health` returning `{ ok: true }` when the database is reachable.
