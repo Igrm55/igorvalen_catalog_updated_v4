@@ -1,35 +1,29 @@
 'use strict';
 
-// server bootstrap entry point
-
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const productService = require('./services/productService');
+const store = require('./services/fileStore');
 
 async function start() {
   try {
-    await productService.load();
-    console.log('[catalog] cache loaded (github or memory fallback)');
+    await store.load();
+    console.log('[catalog] cache loaded');
 
     const app = express();
     const PORT = Number(process.env.PORT || 4000);
 
-    // pasta de uploads
     const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
     fs.mkdirSync(uploadDir, { recursive: true });
 
-    // middlewares
     app.use(cors());
     app.use(express.json({ limit: '2mb' }));
     app.use(express.urlencoded({ extended: true }));
 
-    // healthcheck
     app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-    // Evitar cache do HTML principal (contra SW/asset antigo)
     app.use((req, res, next) => {
       if (req.path === '/' || req.path === '/index.html') {
         res.set('Cache-Control', 'no-store');
@@ -37,10 +31,8 @@ async function start() {
       next();
     });
 
-    // arquivos estáticos
     app.use(express.static(path.join(__dirname, '..', 'public')));
 
-    // Upload (multer)
     const upload = multer({
       storage: multer.diskStorage({
         destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -51,6 +43,23 @@ async function start() {
         }
       })
     });
+
+    function normalizeNumber(val) {
+      if (val === undefined || val === null || val === '') return null;
+      if (typeof val === 'number') return val;
+      const s = String(val).replace('.', '').replace(',', '.');
+      const f = parseFloat(s);
+      return Number.isNaN(f) ? null : f;
+    }
+
+    function getSettings() {
+      const { products, settings } = store.getCache();
+      let order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
+      if (!order.length) {
+        order = [...new Set((products || []).map(p => p.category).filter(Boolean))].sort();
+      }
+      return { id: 1, categoriesOrder: order };
+    }
 
     // ---- Public API ----
     app.get('/api/catalog', async (req, res) => {
@@ -96,36 +105,100 @@ async function start() {
     });
 
     app.post('/api/products', upload.single('image'), async (req, res) => {
-      const body = req.body || {};
-      if (!body.name || !body.category) {
-        if (req.file) await productService.discardUpload(req.file.filename);
-        return res.status(400).json({ error: 'Invalid payload' });
-      }
       try {
-        const data = await productService.create(body, req.file);
-        res.status(201).json(data);
+        const body = req.body || {};
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        const settings = catalog.settings || {};
+        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
+
+        const nextId = products.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+        const newProd = {
+          id: nextId,
+          name: body.name,
+          category: body.category,
+          codes: body.codes ?? null,
+          flavors: body.flavors ?? null,
+          priceUV: normalizeNumber(body.priceUV),
+          priceUP: normalizeNumber(body.priceUP),
+          priceFV: normalizeNumber(body.priceFV),
+          priceFP: normalizeNumber(body.priceFP),
+          sortOrder: products.length + 1,
+          active: body.active === 'false' ? false : true,
+          imageUrl
+        };
+
+        products.push(newProd);
+        if (newProd.category && !order.includes(newProd.category)) order.push(newProd.category);
+        await store.save({ products, settings: { ...settings, categoriesOrder: order } });
+
+        res.json(newProd);
       } catch (err) {
         console.error(err);
+        if (req.file) {
+          fs.promises.unlink(req.file.path).catch(() => {});
+        }
         res.status(500).json({ error: 'Erro ao criar produto' });
       }
     });
 
     app.put('/api/products/:id', upload.single('image'), async (req, res) => {
-      const body = req.body || {};
-      const id = Number(req.params.id);
-      if (!body.name || !body.category) {
-        if (req.file) await productService.discardUpload(req.file.filename);
-        return res.status(400).json({ error: 'Invalid payload' });
-      }
+      let newFile;
+      let oldProduct;
       try {
-        const data = await productService.update(id, body, req.file);
-        if (!data) {
-          if (req.file) await productService.discardUpload(req.file.filename);
-          return res.status(404).json({ error: 'Not found' });
+        const id = Number(req.params.id);
+        const body = req.body || {};
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        const settings = catalog.settings || {};
+        const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
+        const idx = products.findIndex(p => p.id === id);
+        if (idx === -1) return res.status(404).json({ error: 'Not found' });
+
+        oldProduct = { ...products[idx] };
+
+        if (req.file) {
+          newFile = req.file.filename;
         }
-        res.json(data);
+
+        const updates = {
+          name: body.name,
+          category: body.category,
+          codes: body.codes ?? null,
+          flavors: body.flavors ?? null,
+          priceUV: normalizeNumber(body.priceUV),
+          priceUP: normalizeNumber(body.priceUP),
+          priceFV: normalizeNumber(body.priceFV),
+          priceFP: normalizeNumber(body.priceFP),
+          active: body.active === 'false' ? false : true
+        };
+        if (req.file) updates.imageUrl = `/uploads/${newFile}`;
+
+        products[idx] = { ...products[idx], ...updates };
+        if (updates.category && !order.includes(updates.category)) order.push(updates.category);
+
+        await store.save({ products, settings: { ...settings, categoriesOrder: order } });
+
+        if (req.file && oldProduct.imageUrl && oldProduct.imageUrl.startsWith('/uploads/')) {
+          fs.promises.unlink(path.join(uploadDir, path.basename(oldProduct.imageUrl))).catch(() => {});
+        }
+
+        res.json(products[idx]);
       } catch (err) {
         console.error(err);
+        try {
+          const catalog = store.getCache();
+          const products = catalog.products || [];
+          if (oldProduct) {
+            const idx = products.findIndex(p => p.id === oldProduct.id);
+            if (idx !== -1) products[idx] = oldProduct;
+          }
+        } catch {}
+        if (newFile) {
+          fs.promises.unlink(path.join(uploadDir, newFile)).catch(() => {});
+        }
         res.status(500).json({ error: 'Erro ao atualizar produto' });
       }
     });
@@ -133,8 +206,16 @@ async function start() {
     app.delete('/api/products/:id', async (req, res) => {
       const id = Number(req.params.id);
       try {
-        const ok = await productService.remove(id);
-        if (!ok) return res.status(404).json({ error: 'Not found' });
+        const id = Number(req.params.id);
+        const catalog = store.getCache();
+        const products = catalog.products || [];
+        idx = products.findIndex(p => p.id === id);
+        if (idx === -1) return res.status(404).json({ error: 'Not found' });
+        removed = products.splice(idx, 1)[0];
+        await store.save({ ...catalog, products });
+        if (removed.imageUrl && removed.imageUrl.startsWith('/uploads/')) {
+          fs.promises.unlink(path.join(uploadDir, path.basename(removed.imageUrl))).catch(() => {});
+        }
         res.json({ ok: true });
       } catch (err) {
         console.error(err);
@@ -154,17 +235,14 @@ async function start() {
       }
     });
 
-    // Settings endpoint
     app.get('/api/settings', (_req, res) => {
       res.json(productService.getSettings());
     });
 
-    // Fallback SPA
     app.get('*', (_req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Bind 0.0.0.0 p/ deploy
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server up on :${PORT}`);
     });

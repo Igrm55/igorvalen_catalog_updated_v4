@@ -483,7 +483,9 @@
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
-      const order = catalog.settings.categoriesOrder || [];
+      const order = (catalog.settings.categoriesOrder && catalog.settings.categoriesOrder.length)
+        ? catalog.settings.categoriesOrder
+        : [...new Set((catalog.products || []).map(p => p.category).filter(Boolean))].sort();
       const grouped = (activeCategory? [activeCategory] : order).map(c => ({
         category: c,
         products: catalog.products
