@@ -10,7 +10,6 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -134,7 +133,7 @@
         exportContainer.style.height = '1920px';
         exportContainer.style.backgroundColor = 'var(--brand-green)';
         document.body.appendChild(exportContainer);
-        const zip = new JSZip();
+        const files = [];
         for (const category of categories) {
           const items = activeProducts.filter(p => p.category === category);
           if (!items.length) continue;
@@ -234,20 +233,22 @@
               let fileName = category.replace(/[\/\\?%*:|"<>]/g, '_');
               if (pagesNeeded > 1) fileName += `_${pageIndex+1}`;
               fileName += '.png';
-              zip.file(fileName, blob);
+              files.push({ blob, fileName });
             }
           }
         }
         document.body.removeChild(exportContainer);
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'catalogo_imagens.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        for (const file of files) {
+          const url = URL.createObjectURL(file.blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          await new Promise(r => setTimeout(r, 100));
+        }
       } catch (err) {
         console.error('Erro ao gerar catálogo como imagens:', err);
         alert('Ocorreu um erro ao gerar as imagens do catálogo.');
