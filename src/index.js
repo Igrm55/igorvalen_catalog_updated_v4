@@ -14,7 +14,11 @@ const productService = require('./services/productService');
 function normalizeNumber(val) {
   if (val === undefined || val === null || val === '') return null;
   if (typeof val === 'number') return val;
+ codex/refactor-and-enhance-product-catalog-application-q7pjy2
   const s = String(val).replace('.', '').replace(',', '.');
+
+  const s = String(val).replace(/\./g, '').replace(',', '.');
+ main
   const f = parseFloat(s);
   return Number.isNaN(f) ? null : f;
 }
@@ -28,6 +32,7 @@ async function start() {
   app.use(
     helmet({
       contentSecurityPolicy: {
+ codex/refactor-and-enhance-product-catalog-application-q7pjy2
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
           "script-src": ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
@@ -38,6 +43,25 @@ async function start() {
       },
     })
   );
+
+        useDefaults: true,
+        directives: {
+          "script-src": [
+            "'self'",
+            "'unsafe-inline'",
+            "https://unpkg.com",
+            "https://cdn.tailwindcss.com",
+            "https://cdnjs.cloudflare.com"
+          ],
+          "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          "font-src": ["'self'", "https://fonts.gstatic.com"],
+          "img-src": ["'self'", "data:", "*"]
+        }
+      }
+    })
+  );
+
+ main
   app.use(cors());
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
@@ -51,7 +75,11 @@ async function start() {
 
   const storage = new CloudinaryStorage({
     cloudinary,
+ codex/refactor-and-enhance-product-catalog-application-q7pjy2
     params: { folder: 'catalog' }
+
+    params: { folder: 'catalog' },
+ main
   });
   const upload = multer({ storage });
 
@@ -64,6 +92,7 @@ async function start() {
       const { q, category } = req.query;
       let list = await productService.getAll();
       list = list.filter(p => p.active !== false);
+ codex/refactor-and-enhance-product-catalog-application-q7pjy2
       if (category) list = list.filter(p => p.category === category);
       if (q) {
         const s = String(q).toLowerCase();
@@ -189,6 +218,150 @@ async function start() {
 
   app.get('/api/settings', async (_req, res) => {
     res.json(await productService.getSettings());
+
+
+      if (category) {
+        const cat = String(category);
+        list = list.filter(p => String(p.category || '') === cat);
+      }
+
+      if (q) {
+        const s = String(q).toLowerCase();
+        list = list.filter(p =>
+          String(p.name || '').toLowerCase().includes(s) ||
+          String(p.codes || '').toLowerCase().includes(s) ||
+          String(p.category || '').toLowerCase().includes(s)
+        );
+      }
+
+      list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      const settings = await productService.getSettings();
+      res.json({ products: list, settings });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao carregar catálogo' });
+    }
+  });
+
+  app.post('/api/login', (req, res) => {
+    const { password } = req.body || {};
+    res.json({ ok: password === process.env.ADMIN_PASSWORD });
+  });
+
+  app.get('/api/admin/products', async (_req, res) => {
+    try {
+      const list = await productService.getAll();
+      list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      res.json(list);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao listar produtos' });
+    }
+  });
+
+  app.get('/api/products/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    const item = await productService.getById(id);
+    if (!item) return res.status(404).json({ error: 'Not found' });
+    res.json(item);
+  });
+
+  app.post('/api/products', upload.single('image'), async (req, res) => {
+    try {
+      const body = req.body || {};
+      const product = await productService.create({
+        name: body.name,
+        category: body.category,
+        codes: body.codes ?? null,
+        flavors: body.flavors ?? null,
+        priceUV: normalizeNumber(body.priceUV),
+        priceUP: normalizeNumber(body.priceUP),
+        priceFV: normalizeNumber(body.priceFV),
+        priceFP: normalizeNumber(body.priceFP),
+        imageUrl: req.file ? req.file.path : null,        // secure_url do Cloudinary
+        imagePublicId: req.file ? req.file.filename : null, // public_id do Cloudinary
+        active: body.active === 'false' ? false : true,
+      });
+      res.status(201).json(product);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao criar produto' });
+    }
+  });
+
+  app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const old = await productService.getById(id);
+      if (!old) return res.status(404).json({ error: 'Not found' });
+
+      const updates = {
+        name: req.body.name,
+        category: req.body.category,
+        codes: req.body.codes ?? null,
+        flavors: req.body.flavors ?? null,
+        priceUV: normalizeNumber(req.body.priceUV),
+        priceUP: normalizeNumber(req.body.priceUP),
+        priceFV: normalizeNumber(req.body.priceFV),
+        priceFP: normalizeNumber(req.body.priceFP),
+        active: req.body.active === 'false' ? false : true,
+      };
+
+      if (req.file) {
+        updates.imageUrl = req.file.path;
+        updates.imagePublicId = req.file.filename;
+        if (old.imagePublicId) {
+          cloudinary.uploader.destroy(old.imagePublicId).catch(() => {});
+        }
+      }
+
+      const updated = await productService.update(id, updates);
+      res.json(updated);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao atualizar produto' });
+    }
+  });
+
+  app.delete('/api/products/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const existing = await productService.getById(id);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+
+      if (existing.imagePublicId) {
+        cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
+      }
+
+      await productService.remove(id);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao excluir produto' });
+    }
+  });
+
+  app.post('/api/products/reorder', async (req, res) => {
+    const ordered = req.body || [];
+    if (!Array.isArray(ordered)) return res.status(400).json({ error: 'Invalid payload' });
+    try {
+      await productService.reorder(ordered);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao reordenar' });
+    }
+  });
+
+  app.get('/api/settings', async (_req, res) => {
+    try {
+      const settings = await productService.getSettings();
+      res.json(settings);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao carregar configurações' });
+    }
+ main
   });
 
   app.get('*', (_req, res) => {
@@ -203,4 +376,8 @@ async function start() {
 start().catch(err => {
   console.error('[bootstrap error]', err);
   process.exit(1);
+ codex/refactor-and-enhance-product-catalog-application-q7pjy2
 });
+
+});
+ main
