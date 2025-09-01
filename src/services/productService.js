@@ -1,192 +1,168 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const store = require('./githubStore');
+const pool = require('../db/pool');
 
-const uploadDir = path.join(__dirname, '..', '..', 'public', 'uploads');
-
-function normalizeNumber(val) {
-  if (val === undefined || val === null || val === '') return null;
-  if (typeof val === 'number') return val;
-  const s = String(val).replace('.', '').replace(',', '.');
-  const f = parseFloat(s);
-  return Number.isNaN(f) ? null : f;
+function mapProduct(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    codes: row.codes,
+    flavors: row.flavors,
+    priceUV: row.price_uv,
+    priceUP: row.price_up,
+    priceFV: row.price_fv,
+    priceFP: row.price_fp,
+    imageUrl: row.image_url,
+    imagePublicId: row.image_public_id,
+    active: row.active,
+    sortOrder: row.sort_order
+  };
 }
 
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
+async function initializeDatabase() {
+  await pool.query(`CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    codes TEXT,
+    flavors TEXT,
+    price_uv REAL,
+    price_up REAL,
+    price_fv REAL,
+    price_fp REAL,
+    image_url TEXT,
+    image_public_id TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    sort_order INTEGER
+  );`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS settings (
+    id INTEGER PRIMARY KEY,
+    categories_order TEXT
+  );`);
+  await pool.query(`INSERT INTO settings (id, categories_order) VALUES (1, '[]')
+    ON CONFLICT (id) DO NOTHING;`);
 }
 
-function getSettings() {
-  const { settings } = store.getCache();
-  const order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
-  return { id: 1, categoriesOrder: order };
+async function getSettings() {
+  const { rows } = await pool.query('SELECT categories_order FROM settings WHERE id=1');
+  if (rows[0]) {
+    return { categoriesOrder: JSON.parse(rows[0].categories_order || '[]') };
+  }
+  return { categoriesOrder: [] };
 }
 
-async function discardUpload(fileName) {
-  if (!fileName) return;
-  try { await fs.promises.unlink(path.join(uploadDir, fileName)); } catch {}
+async function updateSettingsCategory(cat) {
+  if (!cat) return;
+  const settings = await getSettings();
+  if (!settings.categoriesOrder.includes(cat)) {
+    settings.categoriesOrder.push(cat);
+    await pool.query('UPDATE settings SET categories_order=$1 WHERE id=1', [JSON.stringify(settings.categoriesOrder)]);
+  }
 }
 
 async function getAll() {
-  const { products } = store.getCache();
-  return products || [];
+  const { rows } = await pool.query('SELECT * FROM products');
+  return rows.map(mapProduct);
 }
 
 async function getById(id) {
-  const list = await getAll();
-  return list.find(p => p.id === id);
+  const { rows } = await pool.query('SELECT * FROM products WHERE id=$1', [id]);
+  return mapProduct(rows[0]);
 }
 
-async function create(body, file) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const settings = catalog.settings || {};
-  const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-  const nextId = products.reduce((m, p) => Math.max(m, p.id || 0), 0) + 1;
-
-  let uploaded = false;
-  try {
-    let image = null;
-    if (file) {
-      await store.uploadImage(file.path, file.filename);
-      uploaded = true;
-      image = { filename: file.filename, path: `/uploads/${file.filename}` };
-    }
-
-    const data = {
-      id: nextId,
-      name: body.name || '',
-      category: body.category || '',
-      codes: body.codes || null,
-      flavors: body.flavors || null,
-      imageUrl: image ? image.path : (body.imageUrl || null),
-      image,
-      priceUV: normalizeNumber(body.priceUV),
-      priceUP: normalizeNumber(body.priceUP),
-      priceFV: normalizeNumber(body.priceFV),
-      priceFP: normalizeNumber(body.priceFP),
-      sortOrder: Number(body.sortOrder || products.length + 1),
-      active: body.active === 'false' ? false : true
-    };
-
-    const updatedProducts = [...products, data];
-    if (data.category && !order.includes(data.category)) order.push(data.category);
-
-    await store.save({ products: updatedProducts, settings: { ...settings, categoriesOrder: order } });
-    return data;
-  } catch (err) {
-    await store.save(original).catch(() => {});
-    if (uploaded) {
-      await store.deleteImage(file.filename).catch(() => {});
-      await discardUpload(file.filename);
-    }
-    throw err;
-  }
+async function create(data) {
+  const { rows: maxRows } = await pool.query('SELECT COALESCE(MAX(sort_order),0)+1 AS next FROM products');
+  const sortOrder = maxRows[0].next;
+  const { rows } = await pool.query(
+    `INSERT INTO products
+      (name, category, codes, flavors, price_uv, price_up, price_fv, price_fp, image_url, image_public_id, active, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     RETURNING *`,
+    [
+      data.name,
+      data.category,
+      data.codes,
+      data.flavors,
+      data.priceUV,
+      data.priceUP,
+      data.priceFV,
+      data.priceFP,
+      data.imageUrl,
+      data.imagePublicId,
+      data.active !== false,
+      sortOrder
+    ]
+  );
+  await updateSettingsCategory(data.category);
+  return mapProduct(rows[0]);
 }
 
-async function update(id, body, file) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const settings = catalog.settings || {};
-  const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-  const idx = products.findIndex(p => p.id === id);
-  if (idx === -1) return null;
-
-  const oldProduct = { ...products[idx] };
-  let uploaded = false;
-  try {
-    if (file) {
-      await store.uploadImage(file.path, file.filename);
-      uploaded = true;
-      products[idx].imageUrl = `/uploads/${file.filename}`;
-      products[idx].image = { filename: file.filename, path: `/uploads/${file.filename}` };
+async function update(id, updates) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  const columns = {
+    name: 'name',
+    category: 'category',
+    codes: 'codes',
+    flavors: 'flavors',
+    priceUV: 'price_uv',
+    priceUP: 'price_up',
+    priceFV: 'price_fv',
+    priceFP: 'price_fp',
+    imageUrl: 'image_url',
+    imagePublicId: 'image_public_id',
+    active: 'active',
+    sortOrder: 'sort_order'
+  };
+  for (const key of Object.keys(columns)) {
+    if (updates[key] !== undefined) {
+      fields.push(`${columns[key]}=$${idx}`);
+      if (key === 'active') {
+        values.push(updates[key] === false ? false : true);
+      } else {
+        values.push(updates[key]);
+      }
+      idx++;
     }
-
-    const updates = {
-      name: body.name,
-      category: body.category,
-      codes: body.codes ?? null,
-      flavors: body.flavors ?? null,
-      priceUV: normalizeNumber(body.priceUV),
-      priceUP: normalizeNumber(body.priceUP),
-      priceFV: normalizeNumber(body.priceFV),
-      priceFP: normalizeNumber(body.priceFP),
-      active: body.active === 'false' ? false : true
-    };
-
-    products[idx] = { ...products[idx], ...updates };
-    if (updates.category && !order.includes(updates.category)) order.push(updates.category);
-
-    await store.save({ products, settings: { ...settings, categoriesOrder: order } });
-
-    if (file && oldProduct.image?.filename) {
-      store.deleteImage(oldProduct.image.filename).catch(() => {});
-      await discardUpload(oldProduct.image.filename);
-    }
-
-    return products[idx];
-  } catch (err) {
-    await store.save(original).catch(() => {});
-    if (uploaded) {
-      await store.deleteImage(file.filename).catch(() => {});
-      await discardUpload(file.filename);
-    }
-    return Promise.reject(err);
   }
+  if (!fields.length) return getById(id);
+  values.push(id);
+  await pool.query(`UPDATE products SET ${fields.join(', ')} WHERE id=$${idx}`, values);
+  if (updates.category) await updateSettingsCategory(updates.category);
+  return getById(id);
 }
 
 async function remove(id) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const idx = products.findIndex(p => p.id === id);
-  if (idx === -1) return false;
-  const removed = products.splice(idx, 1)[0];
-
-  try {
-    await store.save({ ...catalog, products });
-    if (removed.image?.filename) {
-      store.deleteImage(removed.image.filename).catch(() => {});
-      await discardUpload(removed.image.filename);
-    }
-    return true;
-  } catch (err) {
-    products.splice(idx, 0, removed);
-    await store.save(original).catch(() => {});
-    throw err;
-  }
+  await pool.query('DELETE FROM products WHERE id=$1', [id]);
 }
 
 async function reorder(ordered) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     for (let i = 0; i < ordered.length; i++) {
-      const id = Number(ordered[i]);
-      const p = products.find(prod => prod.id === id);
-      if (p) p.sortOrder = i + 1;
+      await client.query('UPDATE products SET sort_order=$1 WHERE id=$2', [i + 1, ordered[i]]);
     }
-    await store.save({ ...catalog, products });
+    await client.query('COMMIT');
   } catch (err) {
-    await store.save(original).catch(() => {});
+    await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release();
   }
 }
 
 module.exports = {
-  load: store.load,
+  initializeDatabase,
   getAll,
   getById,
   create,
   update,
   remove,
   reorder,
-  getSettings,
-  discardUpload
+  getSettings
 };
 
