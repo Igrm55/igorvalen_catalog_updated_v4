@@ -25,6 +25,7 @@ async function start() {
   const app = express();
   const PORT = Number(process.env.PORT || 4000);
 
+ codex/refactor-and-enhance-product-catalog-application-kqpd40
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -37,6 +38,9 @@ async function start() {
       },
     })
   );
+=======
+  app.use(helmet());
+ main
   app.use(cors());
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
