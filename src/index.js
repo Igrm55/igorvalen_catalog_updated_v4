@@ -25,7 +25,10 @@ async function start() {
   const app = express();
   const PORT = Number(process.env.PORT || 4000);
 
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
  codex/refactor-and-enhance-product-catalog-application-kqpd40
+ main
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -38,8 +41,11 @@ async function start() {
       },
     })
   );
-=======
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
+
   app.use(helmet());
+ main
  main
   app.use(cors());
   app.use(express.json({ limit: '2mb' }));
@@ -159,6 +165,7 @@ async function start() {
       res.status(500).json({ error: 'Erro ao atualizar produto' });
     }
   });
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
 
   app.delete('/api/products/:id', async (req, res) => {
     const id = Number(req.params.id);
@@ -170,6 +177,19 @@ async function start() {
         cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
       }
 
+
+
+  app.delete('/api/products/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const existing = await productService.getById(id);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+
+      if (existing.imagePublicId) {
+        cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
+      }
+
+ main
       await productService.remove(id);
       res.json({ ok: true });
     } catch (err) {
@@ -207,4 +227,7 @@ start().catch(err => {
   console.error('[bootstrap error]', err);
   process.exit(1);
 });
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
 
+
+ main
