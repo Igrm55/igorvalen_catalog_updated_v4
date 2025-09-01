@@ -73,7 +73,7 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-# .env
+.env
 .env.development.local
 .env.test.local
 .env.production.local
@@ -128,9 +128,8 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# Uploaded product images
-public/uploads/*
-!public/uploads/.gitkeep
+# Local database file
+catalog.db
 
 # yarn v2
 .yarn/cache
