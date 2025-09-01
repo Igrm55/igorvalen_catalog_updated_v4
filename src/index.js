@@ -25,6 +25,13 @@ async function start() {
   const app = express();
   const PORT = Number(process.env.PORT || 4000);
 
+ codex/refactor-and-enhance-product-catalog-application-8iijvn
+
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
+ codex/refactor-and-enhance-product-catalog-application-kqpd40
+ main
+ main
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -33,11 +40,24 @@ async function start() {
           "script-src": ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
           "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           "font-src": ["'self'", "https://fonts.gstatic.com"],
+ codex/refactor-and-enhance-product-catalog-application-8iijvn
           "img-src": ["'self'", "data:", "*"],
         },
       },
     })
   );
+
+        },
+      },
+    })
+  );
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
+
+  app.use(helmet());
+ main
+ main
+ main
   app.use(cors());
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
@@ -120,6 +140,7 @@ async function start() {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Erro ao criar produto' });
+ codex/refactor-and-enhance-product-catalog-application-8iijvn
     }
   });
 
@@ -195,6 +216,97 @@ async function start() {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
   });
 
+
+    }
+  });
+
+  app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const old = await productService.getById(id);
+      if (!old) return res.status(404).json({ error: 'Not found' });
+
+      const updates = {
+        name: req.body.name,
+        category: req.body.category,
+        codes: req.body.codes ?? null,
+        flavors: req.body.flavors ?? null,
+        priceUV: normalizeNumber(req.body.priceUV),
+        priceUP: normalizeNumber(req.body.priceUP),
+        priceFV: normalizeNumber(req.body.priceFV),
+        priceFP: normalizeNumber(req.body.priceFP),
+        active: req.body.active === 'false' ? false : true
+      };
+
+      if (req.file) {
+        updates.imageUrl = req.file.path;
+        updates.imagePublicId = req.file.filename;
+        if (old.imagePublicId) {
+          cloudinary.uploader.destroy(old.imagePublicId).catch(() => {});
+        }
+      }
+
+      const updated = await productService.update(id, updates);
+      res.json(updated);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao atualizar produto' });
+    }
+  });
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
+  app.delete('/api/products/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const existing = await productService.getById(id);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+
+      if (existing.imagePublicId) {
+        cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
+      }
+
+
+
+  app.delete('/api/products/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const existing = await productService.getById(id);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+
+      if (existing.imagePublicId) {
+        cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
+      }
+
+ main
+      await productService.remove(id);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao excluir produto' });
+    }
+  });
+
+  app.post('/api/products/reorder', async (req, res) => {
+    const ordered = req.body || [];
+    if (!Array.isArray(ordered)) return res.status(400).json({ error: 'Invalid payload' });
+    try {
+      await productService.reorder(ordered);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro ao reordenar' });
+    }
+  });
+
+  app.get('/api/settings', async (_req, res) => {
+    res.json(await productService.getSettings());
+  });
+
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  });
+
+ main
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server up on :${PORT}`);
   });
@@ -204,3 +316,10 @@ start().catch(err => {
   console.error('[bootstrap error]', err);
   process.exit(1);
 });
+ codex/refactor-and-enhance-product-catalog-application-8iijvn
+
+ codex/refactor-and-enhance-product-catalog-application-w8zlo0
+
+
+ main
+ main
