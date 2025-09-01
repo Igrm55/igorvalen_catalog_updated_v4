@@ -1,185 +1,212 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const store = require('./githubStore');
+const db = require('../db/pool');
 
-const uploadDir = path.join(__dirname, '..', '..', 'public', 'uploads');
-
-function normalizeNumber(val) {
-  if (val === undefined || val === null || val === '') return null;
-  if (typeof val === 'number') return val;
-  const s = String(val).replace('.', '').replace(',', '.');
-  const f = parseFloat(s);
-  return Number.isNaN(f) ? null : f;
+function num(val) {
+  return val === null || val === undefined ? null : Number(val);
 }
 
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
+function mapProduct(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    codes: row.codes,
+    flavors: row.flavors,
+    priceUV: num(row.price_uv),
+    priceUP: num(row.price_up),
+    priceFV: num(row.price_fv),
+    priceFP: num(row.price_fp),
+    imageUrl: row.image_url,
+    imagePublicId: row.image_public_id,
+    sortOrder: row.sort_order,
+    active: row.active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-function getSettings() {
-  const { settings } = store.getCache();
-  const order = Array.isArray(settings?.categoriesOrder) ? settings.categoriesOrder : [];
-  return { id: 1, categoriesOrder: order };
+async function initializeDatabase() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS products (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT,
+      codes TEXT,
+      flavors TEXT,
+      price_uv NUMERIC(12,2),
+      price_up NUMERIC(12,2),
+      price_fv NUMERIC(12,2),
+      price_fp NUMERIC(12,2),
+      image_url TEXT,
+      image_public_id TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await db.query('CREATE INDEX IF NOT EXISTS idx_products_sort ON products(sort_order);');
+  await db.query('CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);');
+  await db.query('CREATE INDEX IF NOT EXISTS idx_products_name ON products((lower(name)));');
+  await db.query('CREATE INDEX IF NOT EXISTS idx_products_category ON products((lower(category)));');
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id SMALLINT PRIMARY KEY DEFAULT 1,
+      categories JSONB DEFAULT '[]'::jsonb,
+      show_prices BOOLEAN DEFAULT TRUE,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await db.query('INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;');
 }
 
-async function discardUpload(fileName) {
-  if (!fileName) return;
-  try { await fs.promises.unlink(path.join(uploadDir, fileName)); } catch {}
+function mapSettings(row) {
+  const categories = Array.isArray(row.categories) ? row.categories : [];
+  const showPrices = row.show_prices !== false;
+  return { categories, showPrices, categoriesOrder: categories };
 }
 
-async function getAll() {
-  const { products } = store.getCache();
-  return products || [];
+async function getSettings() {
+  const { rows } = await db.query('SELECT categories, show_prices FROM settings WHERE id=1');
+  if (rows[0]) return mapSettings(rows[0]);
+  return { categories: [], showPrices: true, categoriesOrder: [] };
+}
+
+async function upsertSettings(partial = {}) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  if (partial.categories !== undefined) {
+    fields.push(`categories=$${idx++}`);
+    values.push(JSON.stringify(partial.categories));
+  }
+  if (partial.showPrices !== undefined) {
+    fields.push(`show_prices=$${idx++}`);
+    values.push(partial.showPrices);
+  }
+  if (!fields.length) return getSettings();
+  const sql = `UPDATE settings SET ${fields.join(', ')}, updated_at=NOW() WHERE id=1 RETURNING *`;
+  const { rows } = await db.query(sql, values);
+  return mapSettings(rows[0]);
+}
+
+async function ensureCategory(cat) {
+  if (!cat) return;
+  const settings = await getSettings();
+  if (!settings.categories.includes(cat)) {
+    settings.categories.push(cat);
+    await upsertSettings({ categories: settings.categories });
+  }
+}
+
+async function getAll(filters = {}) {
+  const values = [];
+  const where = [];
+  if (filters.q) {
+    values.push(`%${filters.q.toLowerCase()}%`);
+    where.push(`(LOWER(name) LIKE $${values.length} OR LOWER(codes) LIKE $${values.length} OR LOWER(category) LIKE $${values.length})`);
+  }
+  if (filters.category) {
+    values.push(filters.category);
+    where.push(`category = $${values.length}`);
+  }
+  const sql = `SELECT * FROM products${where.length ? ' WHERE ' + where.join(' AND ') : ''} ORDER BY sort_order ASC, id ASC`;
+  const { rows } = await db.query(sql, values);
+  return rows.map(mapProduct);
 }
 
 async function getById(id) {
-  const list = await getAll();
-  return list.find(p => p.id === id);
+  const { rows } = await db.query('SELECT * FROM products WHERE id=$1', [id]);
+  return mapProduct(rows[0]);
 }
 
-async function create(body, file) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const settings = catalog.settings || {};
-  const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-  const nextId = products.reduce((m, p) => Math.max(m, p.id || 0), 0) + 1;
-
-  let uploaded = false;
-  try {
-    let image = null;
-    if (file) {
-      await store.uploadImage(file.path, file.filename);
-      uploaded = true;
-      image = { filename: file.filename, path: `/uploads/${file.filename}` };
-    }
-
-    const data = {
-      id: nextId,
-      name: body.name || '',
-      category: body.category || '',
-      codes: body.codes || null,
-      flavors: body.flavors || null,
-      imageUrl: image ? image.path : (body.imageUrl || null),
-      image,
-      priceUV: normalizeNumber(body.priceUV),
-      priceUP: normalizeNumber(body.priceUP),
-      priceFV: normalizeNumber(body.priceFV),
-      priceFP: normalizeNumber(body.priceFP),
-      sortOrder: Number(body.sortOrder || products.length + 1),
-      active: body.active === 'false' ? false : true
-    };
-
-    const updatedProducts = [...products, data];
-    if (data.category && !order.includes(data.category)) order.push(data.category);
-
-    await store.save({ products: updatedProducts, settings: { ...settings, categoriesOrder: order } });
-    return data;
-  } catch (err) {
-    await store.save(original).catch(() => {});
-    if (uploaded) {
-      await store.deleteImage(file.filename).catch(() => {});
-      await discardUpload(file.filename);
-    }
-    throw err;
-  }
+async function create(data) {
+  const { rows: srows } = await db.query('SELECT COALESCE(MAX(sort_order)+1,0) AS next FROM products');
+  const sortOrder = srows[0].next;
+  const { rows } = await db.query(
+    `INSERT INTO products
+      (name, category, codes, flavors, price_uv, price_up, price_fv, price_fp, image_url, image_public_id, active, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     RETURNING *`,
+    [
+      data.name,
+      data.category,
+      data.codes,
+      data.flavors,
+      data.priceUV,
+      data.priceUP,
+      data.priceFV,
+      data.priceFP,
+      data.imageUrl,
+      data.imagePublicId,
+      data.active !== false,
+      sortOrder,
+    ]
+  );
+  await ensureCategory(data.category);
+  return mapProduct(rows[0]);
 }
 
-async function update(id, body, file) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const settings = catalog.settings || {};
-  const order = Array.isArray(settings.categoriesOrder) ? [...settings.categoriesOrder] : [];
-  const idx = products.findIndex(p => p.id === id);
-  if (idx === -1) return null;
-
-  const oldProduct = { ...products[idx] };
-  let uploaded = false;
-  try {
-    if (file) {
-      await store.uploadImage(file.path, file.filename);
-      uploaded = true;
-      products[idx].imageUrl = `/uploads/${file.filename}`;
-      products[idx].image = { filename: file.filename, path: `/uploads/${file.filename}` };
+async function update(id, updates) {
+  const columns = {
+    name: 'name',
+    category: 'category',
+    codes: 'codes',
+    flavors: 'flavors',
+    priceUV: 'price_uv',
+    priceUP: 'price_up',
+    priceFV: 'price_fv',
+    priceFP: 'price_fp',
+    imageUrl: 'image_url',
+    imagePublicId: 'image_public_id',
+    active: 'active',
+    sortOrder: 'sort_order',
+  };
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  for (const key of Object.keys(columns)) {
+    if (updates[key] !== undefined) {
+      fields.push(`${columns[key]}=$${idx}`);
+      values.push(updates[key]);
+      idx++;
     }
-
-    const updates = {
-      name: body.name,
-      category: body.category,
-      codes: body.codes ?? null,
-      flavors: body.flavors ?? null,
-      priceUV: normalizeNumber(body.priceUV),
-      priceUP: normalizeNumber(body.priceUP),
-      priceFV: normalizeNumber(body.priceFV),
-      priceFP: normalizeNumber(body.priceFP),
-      active: body.active === 'false' ? false : true
-    };
-
-    products[idx] = { ...products[idx], ...updates };
-    if (updates.category && !order.includes(updates.category)) order.push(updates.category);
-
-    await store.save({ products, settings: { ...settings, categoriesOrder: order } });
-
-    if (file && oldProduct.image?.filename) {
-      store.deleteImage(oldProduct.image.filename).catch(() => {});
-      await discardUpload(oldProduct.image.filename);
-    }
-
-    return products[idx];
-  } catch (err) {
-    await store.save(original).catch(() => {});
-    if (uploaded) {
-      await store.deleteImage(file.filename).catch(() => {});
-      await discardUpload(file.filename);
-    }
-    return Promise.reject(err);
   }
+  if (!fields.length) return getById(id);
+  fields.push('updated_at=NOW()');
+  values.push(id);
+  const sql = `UPDATE products SET ${fields.join(', ')} WHERE id=$${idx} RETURNING *`;
+  const { rows } = await db.query(sql, values);
+  const updated = mapProduct(rows[0]);
+  if (updates.category) await ensureCategory(updates.category);
+  return updated;
 }
 
 async function remove(id) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
-  const idx = products.findIndex(p => p.id === id);
-  if (idx === -1) return false;
-  const removed = products.splice(idx, 1)[0];
-
-  try {
-    await store.save({ ...catalog, products });
-    if (removed.image?.filename) {
-      store.deleteImage(removed.image.filename).catch(() => {});
-      await discardUpload(removed.image.filename);
-    }
-    return true;
-  } catch (err) {
-    products.splice(idx, 0, removed);
-    await store.save(original).catch(() => {});
-    throw err;
-  }
+  await db.query('DELETE FROM products WHERE id=$1', [id]);
 }
 
 async function reorder(ordered) {
-  const catalog = store.getCache();
-  const original = clone(catalog);
-  const products = catalog.products || [];
+  const client = await db.getClient();
   try {
+    await client.query('BEGIN');
     for (let i = 0; i < ordered.length; i++) {
-      const id = Number(ordered[i]);
-      const p = products.find(prod => prod.id === id);
-      if (p) p.sortOrder = i + 1;
+      await client.query('UPDATE products SET sort_order=$1 WHERE id=$2', [i, ordered[i]]);
     }
-    await store.save({ ...catalog, products });
+    await client.query('COMMIT');
   } catch (err) {
-    await store.save(original).catch(() => {});
+    await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release();
   }
 }
 
 module.exports = {
-  load: store.load,
+  initializeDatabase,
   getAll,
   getById,
   create,
@@ -187,6 +214,6 @@ module.exports = {
   remove,
   reorder,
   getSettings,
-  discardUpload
+  upsertSettings,
 };
 
