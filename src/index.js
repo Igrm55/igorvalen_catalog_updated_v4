@@ -19,29 +19,55 @@ function normalizeNumber(val) {
   return Number.isNaN(f) ? null : f;
 }
 
+// garante que o admin/front nunca quebre com null
+function sanitizeProduct(p = {}) {
+  return {
+    ...p,
+    name: p?.name ?? '',
+    category: p?.category ?? '',
+    codes: p?.codes ?? '',
+    flavors: p?.flavors ?? '',
+  };
+}
+
 async function start() {
   await productService.initializeDatabase();
 
   const app = express();
   const PORT = Number(process.env.PORT || 4000);
 
+  // Helmet com CSP ajustado para Admin (CDNs) e workers
   app.use(
     helmet({
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
+          "default-src": ["'self'"],
           "script-src": [
             "'self'",
             "'unsafe-inline'",
+            "'unsafe-eval'",
             "https://unpkg.com",
             "https://cdn.tailwindcss.com",
-            "https://cdnjs.cloudflare.com"
+            "https://cdnjs.cloudflare.com",
+            "https://cdn.jsdelivr.net"
           ],
-          "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-          "font-src": ["'self'", "https://fonts.gstatic.com"],
-          "img-src": ["'self'", "data:", "*"]
-        }
-      }
+          "style-src": [
+            "'self'",
+            "'unsafe-inline'",
+            "https://fonts.googleapis.com",
+            "https://cdn.jsdelivr.net"
+          ],
+          "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+          "img-src": ["'self'", "data:", "blob:", "*"],
+          "connect-src": ["'self'", "*"],
+          "worker-src": ["'self'", "blob:"],
+          "frame-src": ["'self'", "*"],
+        },
+      },
+      crossOriginResourcePolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     })
   );
 
@@ -64,8 +90,10 @@ async function start() {
 
   app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  // arquivos estáticos
+  app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
 
+  // --- API ---
   app.get('/api/catalog', async (req, res) => {
     try {
       const { q, category } = req.query;
@@ -88,7 +116,8 @@ async function start() {
 
       list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
       const settings = await productService.getSettings();
-      res.json({ products: list, settings });
+      // sanitize antes de responder
+      res.json({ products: list.map(sanitizeProduct), settings });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Erro ao carregar catálogo' });
@@ -102,9 +131,10 @@ async function start() {
 
   app.get('/api/admin/products', async (_req, res) => {
     try {
-      const list = await productService.getAll();
+      let list = await productService.getAll();
       list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-      res.json(list);
+      // sanitize para o Admin não quebrar em .toLowerCase()
+      res.json(list.map(sanitizeProduct));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Erro ao listar produtos' });
@@ -115,12 +145,18 @@ async function start() {
     const id = Number(req.params.id);
     const item = await productService.getById(id);
     if (!item) return res.status(404).json({ error: 'Not found' });
-    res.json(item);
+    res.json(sanitizeProduct(item));
   });
 
   app.post('/api/products', upload.single('image'), async (req, res) => {
     try {
       const body = req.body || {};
+
+      // evita criar registro sem nome (causa tela branca no Admin)
+      if (!body.name || !String(body.name).trim()) {
+        return res.status(400).json({ error: 'Nome é obrigatório' });
+      }
+
       const product = await productService.create({
         name: body.name,
         category: body.category,
@@ -130,11 +166,11 @@ async function start() {
         priceUP: normalizeNumber(body.priceUP),
         priceFV: normalizeNumber(body.priceFV),
         priceFP: normalizeNumber(body.priceFP),
-        imageUrl: req.file ? req.file.path : null,        // secure_url do Cloudinary
+        imageUrl: req.file ? req.file.path : null,          // secure_url do Cloudinary
         imagePublicId: req.file ? req.file.filename : null, // public_id do Cloudinary
         active: body.active === 'false' ? false : true,
       });
-      res.status(201).json(product);
+      res.status(201).json(sanitizeProduct(product));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Erro ao criar produto' });
@@ -146,6 +182,10 @@ async function start() {
     try {
       const old = await productService.getById(id);
       if (!old) return res.status(404).json({ error: 'Not found' });
+
+      if (req.body.name !== undefined && !String(req.body.name).trim()) {
+        return res.status(400).json({ error: 'Nome não pode ser vazio' });
+      }
 
       const updates = {
         name: req.body.name,
@@ -168,7 +208,7 @@ async function start() {
       }
 
       const updated = await productService.update(id, updates);
-      res.json(updated);
+      res.json(sanitizeProduct(updated));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Erro ao atualizar produto' });
@@ -215,6 +255,12 @@ async function start() {
     }
   });
 
+  // Rota dedicada para Admin SPA (se o front usa /admin ou /admin/*)
+  app.get(['/admin', '/admin/*'], (_req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  });
+
+  // Fallback SPA (catálogo)
   app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
   });
