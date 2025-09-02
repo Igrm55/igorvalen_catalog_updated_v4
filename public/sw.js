@@ -13,7 +13,16 @@ self.addEventListener('message', event => {
     offlineEnabled = true;
     event.waitUntil((async () => {
       const staticCache = await caches.open(STATIC_CACHE);
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
       await Promise.all(['/', '/index.html'].map(a => staticCache.add(a).catch(()=>{})));
+
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
+      const assets = ['/', '/index.html', '/img/placeholder.png'];
+      await Promise.all(assets.map(a => staticCache.add(a).catch(()=>{})));
+
+      await staticCache.addAll(['/', '/index.html', '/img/placeholder.png']);
+ main
+ main
       const dataCache = await caches.open(DATA_CACHE);
       await dataCache.add('/api/catalog');
       await dataCache.put('offline-enabled', new Response('true'));
@@ -28,9 +37,12 @@ self.addEventListener('message', event => {
 });
 
 self.addEventListener('install', event => {
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache => cache.addAll(['/', '/index.html']))
   );
+
+ main
   self.skipWaiting();
 });
 
@@ -64,6 +76,7 @@ self.addEventListener('fetch', event => {
       }
       return fetchPromise;
     })());
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
     return;
   }
 
@@ -104,6 +117,61 @@ self.addEventListener('fetch', event => {
   }
 
   // Demais requisições GET: network-first com cache somente se offlineEnabled
+
+    return;
+  }
+
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
+  // Demais APIs: network-first com fallback quando offlineEnabled
+
+  // Demais APIs: network-first
+ main
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(DATA_CACHE);
+      try {
+        const res = await fetch(req);
+        if (offlineEnabled && res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
+        if (offlineEnabled) {
+          const cached = await cache.match(req);
+          if (cached) return cached;
+        }
+
+        const cached = await cache.match(req);
+        if (cached) return cached;
+ main
+        throw err;
+      }
+    })());
+    return;
+  }
+
+  // Imagens: cache-first
+  if (req.destination === 'image') {
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        return cached;
+      }
+    })());
+    return;
+  }
+
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
+  // Demais requisições GET: network-first com cache somente se offlineEnabled
+
+  // Demais requisições GET
+ main
+ main
   event.respondWith((async () => {
     const cache = await caches.open(STATIC_CACHE);
     try {
@@ -111,10 +179,21 @@ self.addEventListener('fetch', event => {
       if (offlineEnabled && res.ok) cache.put(req, res.clone());
       return res;
     } catch (err) {
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
+ main
       if (offlineEnabled) {
         const cached = await cache.match(req);
         if (cached) return cached;
       }
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+
+
+      const cached = await cache.match(req);
+      if (cached) return cached;
+ main
+ main
       throw err;
     }
   })());
