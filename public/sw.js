@@ -1,51 +1,122 @@
-const VERSION = 'v5';
-const CORE = [
-  '/',
-  '/index.html',
-  '/img/placeholder.png'
-];
+const STATIC_CACHE = 'iv-static-v1';
+const DATA_CACHE = 'iv-data-v1';
+let offlineEnabled = false;
 
-let OFFLINE_ENABLED = false;
+// Recupera estado salvo do modo offline
+caches.open(DATA_CACHE).then(cache => {
+  cache.match('offline-enabled').then(res => { offlineEnabled = !!res; });
+});
 
-self.addEventListener('message', (e)=>{
-  if (e.data && e.data.type === 'offline') {
-    OFFLINE_ENABLED = !!e.data.enabled;
+self.addEventListener('message', event => {
+  const msg = event.data || {};
+  if (msg.type === 'ENABLE_OFFLINE') {
+    offlineEnabled = true;
+    event.waitUntil((async () => {
+      const staticCache = await caches.open(STATIC_CACHE);
+      await Promise.all(['/', '/index.html'].map(a => staticCache.add(a).catch(()=>{})));
+      const dataCache = await caches.open(DATA_CACHE);
+      await dataCache.add('/api/catalog');
+      await dataCache.put('offline-enabled', new Response('true'));
+    })());
+  }
+  if (msg.type === 'DISABLE_OFFLINE') {
+    offlineEnabled = false;
+    event.waitUntil((async () => {
+      await caches.delete(DATA_CACHE);
+    })());
   }
 });
 
-self.addEventListener('install', (e)=>{
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then(cache => cache.addAll(['/', '/index.html']))
+  );
   self.skipWaiting();
-  e.waitUntil(caches.open('core-'+VERSION).then(c=>c.addAll(CORE)));
 });
 
-self.addEventListener('activate', (e)=>{
-  e.waitUntil((async ()=>{
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map(k=>{
-      if (!k.endsWith(VERSION)) return caches.delete(k);
+    await Promise.all(keys.map(k => {
+      if (![STATIC_CACHE, DATA_CACHE].includes(k)) return caches.delete(k);
     }));
     await self.clients.claim();
   })());
 });
 
-self.addEventListener('fetch', (e)=>{
-  const req = e.request;
-  const url = new URL(req.url);
+self.addEventListener('fetch', event => {
+  const req = event.request;
   if (req.method !== 'GET') return;
-  // Network-first for API
-  if (url.pathname.startsWith('/api/')){
-    e.respondWith(fetch(req).catch(()=>caches.match(req)));
+  const url = new URL(req.url);
+
+  // Catálogo: stale-while-revalidate
+  if (url.pathname === '/api/catalog') {
+    event.respondWith((async () => {
+      const cache = await caches.open(DATA_CACHE);
+      const cached = await cache.match(req);
+      const fetchPromise = fetch(req).then(res => {
+        if (offlineEnabled && res.ok) cache.put(req, res.clone());
+        return res;
+      }).catch(() => null);
+      if (cached) {
+        fetchPromise;
+        return cached;
+      }
+      return fetchPromise;
+    })());
     return;
   }
-  e.respondWith((async ()=>{
-    const cache = await caches.open('sw-'+VERSION);
-    const cached = await cache.match(req);
+
+  // Demais APIs: network-first com fallback quando offlineEnabled
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(DATA_CACHE);
+      try {
+        const res = await fetch(req);
+        if (offlineEnabled && res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        if (offlineEnabled) {
+          const cached = await cache.match(req);
+          if (cached) return cached;
+        }
+        throw err;
+      }
+    })());
+    return;
+  }
+
+  // Imagens: cache-first
+  if (req.destination === 'image') {
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        return cached;
+      }
+    })());
+    return;
+  }
+
+  // Demais requisições GET: network-first com cache somente se offlineEnabled
+  event.respondWith((async () => {
+    const cache = await caches.open(STATIC_CACHE);
     try {
       const res = await fetch(req);
-      if (OFFLINE_ENABLED && res.ok) cache.put(req, res.clone());
+      if (offlineEnabled && res.ok) cache.put(req, res.clone());
       return res;
-    } catch(err) {
-      return cached;
+    } catch (err) {
+      if (offlineEnabled) {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+      }
+      throw err;
     }
   })());
 });
+
