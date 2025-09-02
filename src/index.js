@@ -14,6 +14,14 @@ const productService = require('./services/productService');
 // senha do admin: definir ADMIN_PASSWORD no .env ou usar fallback 1234
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '1234';
 
+function requireAdmin(req, res, next) {
+  const auth = req.headers['authorization'];
+  if (!auth || auth !== `Bearer ${ADMIN_PASSWORD}`) {
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+  next();
+}
+
 function normalizeNumber(val) {
   if (val === undefined || val === null || val === '') return null;
   if (typeof val === 'number') return val;
@@ -132,7 +140,7 @@ async function start() {
     res.json({ ok: password === ADMIN_PASSWORD });
   });
 
-  app.get('/api/admin/products', async (_req, res) => {
+  app.get('/api/admin/products', requireAdmin, async (_req, res) => {
     try {
       let list = await productService.getAll();
       list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -144,14 +152,14 @@ async function start() {
     }
   });
 
-  app.get('/api/products/:id', async (req, res) => {
+  app.get('/api/products/:id', requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const item = await productService.getById(id);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(sanitizeProduct(item));
   });
 
-  app.post('/api/products', upload.single('image'), async (req, res) => {
+  app.post('/api/products', requireAdmin, upload.single('image'), async (req, res) => {
     try {
       const body = req.body || {};
 
@@ -180,7 +188,7 @@ async function start() {
     }
   });
 
-  app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+  app.put('/api/products/:id', requireAdmin, upload.single('image'), async (req, res) => {
     const id = Number(req.params.id);
     try {
       const old = await productService.getById(id);
@@ -218,7 +226,7 @@ async function start() {
     }
   });
 
-  app.delete('/api/products/:id', async (req, res) => {
+  app.delete('/api/products/:id', requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     try {
       const existing = await productService.getById(id);
@@ -236,7 +244,7 @@ async function start() {
     }
   });
 
-  app.post('/api/products/reorder', async (req, res) => {
+  app.post('/api/products/reorder', requireAdmin, async (req, res) => {
     const ordered = req.body || [];
     if (!Array.isArray(ordered)) return res.status(400).json({ error: 'Invalid payload' });
     try {
