@@ -11,6 +11,9 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { v2: cloudinary } = require('cloudinary');
 const productService = require('./services/productService');
 
+// senha do admin: definir ADMIN_PASSWORD no .env ou usar fallback 1234
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '1234';
+
 function normalizeNumber(val) {
   if (val === undefined || val === null || val === '') return null;
   if (typeof val === 'number') return val;
@@ -126,7 +129,7 @@ async function start() {
 
   app.post('/api/login', (req, res) => {
     const { password } = req.body || {};
-    res.json({ ok: password === process.env.ADMIN_PASSWORD });
+    res.json({ ok: password === ADMIN_PASSWORD });
   });
 
   app.get('/api/admin/products', async (_req, res) => {
