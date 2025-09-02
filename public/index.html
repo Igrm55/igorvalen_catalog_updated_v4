@@ -99,6 +99,12 @@
     const ALLOWED_CATEGORIES = [
       'Bebidas não alcoólicas',
       'Bebidas alcoólicas',
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+      'Bomboniere',
+      'Cigarro',
+      'Utilidades',
+    ];
+
       'Bombonière',
       'Cigarro',
       'Utilidades',
@@ -109,8 +115,17 @@
     const DISPLAY_LABELS = { 'Bombonière': 'Bomboniere' };
 
  main
+ main
 
-    const getCategoryIcon = (cat) => categoryIcons[cat] || categoryIcons.default;
+    // rótulos de exibição diferentes do identificador interno
+    const DISPLAY_LABELS = { 'Bombonière': 'Bomboniere' };
+    const toDisplay = (c) => DISPLAY_LABELS[c] || c;
+    const toInternal = (label) => Object.entries(DISPLAY_LABELS).find(([orig, disp]) => disp === label)?.[0] || label;
+
+    const getCategoryIcon = (cat) => {
+      const key = toDisplay(cat);
+      return categoryIcons[key] || categoryIcons.default;
+    };
 
     const api = {
       loginAdmin: async (password)=>{
@@ -350,6 +365,17 @@
       const [showExportOptions, setShowExportOptions] = useState(false);
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{backgroundColor:'var(--brand-green)'}}>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+          <div className="max-w-screen-xl mx-auto px-4 md:px-6 flex flex-wrap items-center justify-between gap-3 md:gap-6">
+            <div className="bg-white px-4 py-2 rounded-xl shadow cursor-pointer flex-shrink-0 transform hover:scale-105 transition-transform" onClick={()=>navigate('home')}>
+              <div className="flex items-baseline">
+                <span className="text-xl font-bold" style={{color:'var(--brand-green)'}}>Igor</span>
+                <span className="text-xl font-bold" style={{color:'var(--brand-red)'}}>Valen</span>
+              </div>
+              <span className="block text-sm -mt-1 font-medium text-gray-800 text-right">Distribuidora</span>
+            </div>
+            <div className="flex items-center gap-3 md:gap-6 flex-wrap text-white font-semibold">
+
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
           <div className="max-w-screen-xl mx-auto px-4 md:px-6 flex flex-wrap items-center justify-between gap-3 md:gap-6">
 
@@ -366,6 +392,7 @@
             <div className="flex items-center gap-3 md:gap-6 flex-wrap text-white font-semibold">
 
             <div className="flex items-center gap-4 md:gap-6 flex-wrap text-white font-semibold">
+ main
  main
               <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">Catálogo</button>
               <div className="flex items-center gap-2">
@@ -405,12 +432,18 @@
           </div>
           <div className="flex-grow flex flex-col">
             <h3 className="font-bold text-lg leading-tight" style={{color:'var(--brand-green)'}}>{product.name}</h3>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+            <p className="text-xs text-gray-500 mt-1">Código(s): {product.codes || '-'}</p>
+            <p className="text-xs text-gray-500">Categoria: {toDisplay(product.category) || '-'}</p>
+            <p className="text-xs text-gray-500">Sabores: <span className="text-gray-700">{product.flavors || '-'}</span></p>
+
             <p className="text-xs text-gray-500 mt-1">Código(s): {product.codes || "-"}</p>
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
             <p className="text-xs text-gray-500">Categoria: {DISPLAY_LABELS[product.category] || product.category || '-'}</p>
 
  main
             <p className="text-sm font-semibold" style={{color:'var(--brand-red)'}}>Sabores: <span className="font-normal text-gray-700">{product.flavors || '-'}</span></p>
+ main
             {showPrices && (
               <div className="mt-3 pt-3 border-t space-y-2">
                 {(priceMode === 'avista' || priceMode === 'both') && (
@@ -526,12 +559,21 @@
       const handleCategoryClick = (category) => {
         setActiveCategory(category);
         setQuery('');
-        loadCatalog('', category);
+        loadCatalog('', toInternal(category));
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
       let order = ALLOWED_CATEGORIES;
       const settingsOrder = catalog.settings.categoriesOrder || [];
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+      const cleanSettings = settingsOrder
+        .map(toDisplay)
+        .filter(c => ALLOWED_CATEGORIES.includes(c));
+      if (cleanSettings.length === ALLOWED_CATEGORIES.length) {
+        order = cleanSettings;
+      }
+      const grouped = (activeCategory ? [activeCategory] : order).map(c => ({
+
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
       const cleanSettings = settingsOrder.filter(c => ALLOWED_CATEGORIES.includes(c));
       if (cleanSettings.length === ALLOWED_CATEGORIES.length) {
@@ -545,15 +587,24 @@
  main
       }
       const grouped = (activeCategory? [activeCategory] : order).map(c => ({
+ main
         category: c,
         products: catalog.products
-          .filter(p => p.category === c)
-          .sort((a,b)=> a.name.localeCompare(b.name))
-      })).filter(g=>g.products.length>0);
+          .filter(p => toDisplay(p.category) === c)
+          .sort((a,b)=> String(a.name || '').localeCompare(String(b.name || '')))
+      })).filter(g => g.products.length > 0);
 
       return (
         <>
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+          {!activeCategory && !query && (
+            <>
+              <div className="panel p-6 mb-8 text-center">
+                <h1 className="text-4xl font-extrabold text-green-700 mb-2">Seja bem-vindo ao nosso catálogo!</h1>
+                <p className="text-gray-700">Explore nossas ofertas e aproveite ótimos preços.</p>
+              </div>
+
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
           {!activeCategory && !query && (
             <div className="panel p-6 mb-8 text-center">
@@ -567,6 +618,7 @@
           </div>
           {!activeCategory && !query && (
             <>
+ main
               <div className="my-8 text-center">
                 <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
                 <p className="max-w-2xl mx-auto mb-8 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.4)'}}>Seguimos recomendações rigorosas e controle de qualidade.</p>
@@ -586,6 +638,8 @@
                   ))}
                 </div>
               </div>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+
 
               <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
                 <img loading="lazy" src="/img/banners/brussels.jpg" alt="Cerveja Brussels" className="w-full h-64 object-cover" onError={(e)=>{e.target.style.display='none'; e.target.parentElement.style.display='none';}}/>
@@ -596,10 +650,14 @@
                 </div>
               </div>
 
+ main
               <div className="banner mb-6 rounded-2xl overflow-hidden shadow-lg">
                 <img loading="lazy" src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
               </div>
             </>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+=======
+ main
  main
           )}
 
@@ -609,21 +667,29 @@
                 <button onClick={() => handleCategoryClick(null)} className={`flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${!activeCategory? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                   <span className="inline-flex items-center gap-1">{getCategoryIcon('Todas')} Todas</span>
                 </button>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                {order.map(cat => {
+                  const label = toDisplay(cat);
+=======
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
                 {order.map(cat => {
                   const label = DISPLAY_LABELS[cat] || cat;
+ main
                   return (
                     <button key={cat} onClick={() => handleCategoryClick(cat)} className={`flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                       <span className="inline-flex items-center gap-1">{getCategoryIcon(cat)} {label}</span>
                     </button>
                   );
                 })}
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+
 
                 {order.map(cat => (
                   <button key={cat} onClick={() => handleCategoryClick(cat)} className={`flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeCategory===cat? 'bg-green-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                     <span className="inline-flex items-center gap-1">{getCategoryIcon(cat)} {cat}</span>
                   </button>
                 ))}
+ main
  main
               </div>
               <div className="flex items-center gap-4 flex-wrap">
@@ -649,16 +715,25 @@
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 w-full px-4 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
               />
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                {query && (
+                  <button
+                    type="button"
+                    onClick={()=>{ setQuery(''); loadCatalog('', toInternal(activeCategory)); }} // apenas limpa, sem scroll
+
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
                 {query && (
                   <button
                     type="button"
                     onClick={()=>{ setQuery(''); loadCatalog('', activeCategory); }} // apenas limpa, sem scroll
+ main
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300"
                   >
                     Limpar
                   </button>
                 )}
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+
 
               {query && (
                 <button
@@ -669,6 +744,7 @@
                   Limpar busca
                 </button>
               )}
+ main
  main
               <button
                 type="submit"
@@ -694,11 +770,18 @@
           ) : (
             <>
               {grouped.map(group=>{
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+              const hasWaveBg = ['Bebidas não alcoólicas','Bomboniere','Utilidades'].includes(group.category);
+              const content = (
+                <>
+                    {activeCategory && group.category === 'Bebidas alcoólicas' && (
+
               const hasWaveBg = ['Bebidas não alcoólicas','Bombonière','Utilidades'].includes(group.category);
               const content = (
                 <>
  codex/fix-and-enhance-tablet-catalog-ui-x796zw
                     {group.category === 'Bebidas alcoólicas' && (
+ main
                       <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
                         <img loading="lazy" src="/img/banners/brussels.jpg" alt="Cerveja Brussels" className="w-full h-64 object-cover" onError={(e)=>{e.target.style.display='none'; e.target.parentElement.style.display='none';}}/>
                         <div className="p-6 text-gray-800 bg-white/95 border border-gray-100">
@@ -708,6 +791,9 @@
                         </div>
                       </div>
                     )}
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                    {activeCategory && group.category === 'Bebidas não alcoólicas' && (
+
                     {group.category === 'Bebidas não alcoólicas' && (
 
                   {group.category === 'Bebidas alcoólicas' && (
@@ -716,6 +802,7 @@
                     </div>
                   )}
                   {group.category === 'Bebidas não alcoólicas' && (
+ main
  main
                     <div className="mb-8 panel p-6 overflow-hidden text-gray-800">
                       <div className="ism-section flex flex-col gap-4 sm:flex-row sm:gap-0">
@@ -764,7 +851,11 @@
                       </div>
                     </div>
                   )}
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                  <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{getCategoryIcon(group.category)}{toDisplay(group.category)}</h2>
+
                   <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{getCategoryIcon(group.category)}{DISPLAY_LABELS[group.category] || group.category}</h2>
+ main
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
                     <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
                       {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
@@ -890,7 +981,11 @@
                         <div>{p.name}<div className="text-xs text-gray-500 font-normal">Códigos: {p.codes || '-'}</div></div>
                       </div>
                     </td>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                    <td className="p-3 text-gray-600">{toDisplay(p.category)}</td>
+
                     <td className="p-3 text-gray-600">{DISPLAY_LABELS[p.category] || p.category}</td>
+ main
                     <td className="p-3 text-gray-600">{p.active?'Sim':'Não'}</td>
                     <td className="p-3 whitespace-nowrap text-right">
                       <div className="flex gap-2 justify-end">
@@ -916,7 +1011,11 @@
                   <img src={p.imageUrl||'/img/placeholder.png'} className="w-16 h-16 object-contain rounded bg-gray-100 p-1"/>
                   <div className="flex-grow">
                     <h3 className="font-bold text-gray-800">{p.name}</h3>
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                    <p className="text-sm text-gray-500">{toDisplay(p.category)}</p>
+
                     <p className="text-sm text-gray-500">{DISPLAY_LABELS[p.category] || p.category}</p>
+ main
                     <p className="text-xs text-gray-500">Ativo: {p.active ? 'Sim' : 'Não'}</p>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -948,21 +1047,25 @@
       const [loading,setLoading]=useState(true);
       const [imagePreview,setImagePreview]=useState(null);
       const fileRef = useRef(null);
-      const [categories,setCategories]=useState([]);
+      const [categories,setCategories]=useState(ALLOWED_CATEGORIES);
       const [flavors,setFlavors]=useState(['']);
 
         useEffect(() => {
         (async () => {
           try {
             const s = await (await fetch('/api/settings')).json();
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+            const cats = (s.categoriesOrder || []).map(toDisplay).filter(c => ALLOWED_CATEGORIES.includes(c));
+
             const cats = (s.categoriesOrder || []).filter(c => ALLOWED_CATEGORIES.includes(c));
+ main
             const finalCats = cats.length ? cats : ALLOWED_CATEGORIES;
             setCategories(finalCats);
             if (id) {
               try {
                 const p = await api.getProduct(id);
                 if (p && !p.error) {
-                  setProduct(p);
+                  setProduct({ ...p, category: toDisplay(p.category) });
                   if (p.imageUrl) setImagePreview(p.imageUrl);
                   const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
                   setFlavors(fl);
@@ -1003,6 +1106,7 @@
         const fd = new FormData();
         Object.entries(product).forEach(([k,v])=>{
           if (k==='flavors') return;
+          if (k==='category'){ fd.append('category', toInternal(v)); return; }
           if (['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return;
           fd.append(k, v);
         });
@@ -1026,7 +1130,11 @@
                   <div><label className="block font-semibold mb-1">Nome</label><input name="name" value={product.name} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg"/></div>
                   <div><label className="block font-semibold mb-1">Categoria</label>
                       <select name="category" value={product.category} onChange={change} className="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg">
+ codex/fix-and-enhance-tablet-catalog-ui-iyom3t
+                        {categories.map(c=> <option key={c} value={c}>{toDisplay(c)}</option>)}
+
                         {categories.map(c=> <option key={c} value={c}>{DISPLAY_LABELS[c] || c}</option>)}
+ main
                       </select>
                     </div>
                   </div>
