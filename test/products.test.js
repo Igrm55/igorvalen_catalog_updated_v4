@@ -30,17 +30,17 @@ test('create and delete product', { skip: shouldSkip }, async () => {
   form.append('category', 'TestCat');
   form.append('image', new Blob(['hello'], { type: 'text/plain' }), 'test.txt');
 
-  const res = await fetch('http://localhost:4000/api/products', { method: 'POST', body: form });
+  const res = await fetch('http://localhost:4000/api/products', { method: 'POST', body: form, headers:{Authorization:'Bearer 1234'} });
   assert.strictEqual(res.status, 201);
   const created = await res.json();
   assert.ok(created.id);
   assert.ok(created.imageUrl);
 
-  const getRes = await fetch(`http://localhost:4000/api/products/${created.id}`);
+  const getRes = await fetch(`http://localhost:4000/api/products/${created.id}`, { headers:{Authorization:'Bearer 1234'} });
   assert.strictEqual(getRes.status, 200);
   const fetched = await getRes.json();
   assert.strictEqual(fetched.id, created.id);
 
-  const delRes = await fetch(`http://localhost:4000/api/products/${created.id}`, { method: 'DELETE' });
+  const delRes = await fetch(`http://localhost:4000/api/products/${created.id}`, { method: 'DELETE', headers:{Authorization:'Bearer 1234'} });
   assert.strictEqual(delRes.status, 200);
 });
