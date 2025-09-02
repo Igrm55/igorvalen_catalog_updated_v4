@@ -13,8 +13,12 @@ self.addEventListener('message', event => {
     offlineEnabled = true;
     event.waitUntil((async () => {
       const staticCache = await caches.open(STATIC_CACHE);
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
       const assets = ['/', '/index.html', '/img/placeholder.png'];
       await Promise.all(assets.map(a => staticCache.add(a).catch(()=>{})));
+
+      await staticCache.addAll(['/', '/index.html', '/img/placeholder.png']);
+ main
       const dataCache = await caches.open(DATA_CACHE);
       await dataCache.add('/api/catalog');
       await dataCache.put('offline-enabled', new Response('true'));
@@ -65,7 +69,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
   // Demais APIs: network-first com fallback quando offlineEnabled
+
+  // Demais APIs: network-first
+ main
   if (url.pathname.startsWith('/api/')) {
     event.respondWith((async () => {
       const cache = await caches.open(DATA_CACHE);
@@ -74,10 +82,15 @@ self.addEventListener('fetch', event => {
         if (offlineEnabled && res.ok) cache.put(req, res.clone());
         return res;
       } catch (err) {
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
         if (offlineEnabled) {
           const cached = await cache.match(req);
           if (cached) return cached;
         }
+
+        const cached = await cache.match(req);
+        if (cached) return cached;
+ main
         throw err;
       }
     })());
@@ -101,7 +114,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
   // Demais requisições GET: network-first com cache somente se offlineEnabled
+
+  // Demais requisições GET
+ main
   event.respondWith((async () => {
     const cache = await caches.open(STATIC_CACHE);
     try {
@@ -109,10 +126,15 @@ self.addEventListener('fetch', event => {
       if (offlineEnabled && res.ok) cache.put(req, res.clone());
       return res;
     } catch (err) {
+ codex/fix-and-enhance-tablet-catalog-ui-x796zw
       if (offlineEnabled) {
         const cached = await cache.match(req);
         if (cached) return cached;
       }
+
+      const cached = await cache.match(req);
+      if (cached) return cached;
+ main
       throw err;
     }
   })());
