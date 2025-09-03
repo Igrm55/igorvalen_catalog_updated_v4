@@ -1,7 +1,10 @@
 'use strict';
 
 let pool;
+ codex/corrigir-problemas-de-carregamento-jt0roj
+
  codex/corrigir-problemas-de-carregamento-zi2n62
+ main
 let poolPromise;
 
 async function initPool() {
@@ -32,6 +35,8 @@ async function initPool() {
   })();
 
   return poolPromise;
+ codex/corrigir-problemas-de-carregamento-jt0roj
+
 
 
  codex/corrigir-problemas-de-carregamento-xx0uhz
@@ -79,6 +84,7 @@ if (process.env.DATABASE_URL) {
   const { Pool } = db.adapters.createPg();
   pool = new Pool();
   return pool;
+ main
  main
 }
 
