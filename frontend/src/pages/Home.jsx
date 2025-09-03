@@ -5,12 +5,14 @@ import ItemCard from '../components/ItemCard';
 function Home() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
       .get('/items')
       .then((res) => setItems(res.data))
-      .catch(() => alert('Erro ao carregar itens'));
+      .catch(() => alert('Erro ao carregar itens'))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = items.filter((i) =>
@@ -25,11 +27,17 @@ function Home() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="grid md:grid-cols-3 gap-4">
-        {filtered.map((item) => (
-          <ItemCard key={item._id} item={item} />
-        ))}
-      </div>
+      {loading ? (
+        <p>Carregando...</p>
+      ) : filtered.length ? (
+        <div className="grid md:grid-cols-3 gap-4">
+          {filtered.map((item) => (
+            <ItemCard key={item._id} item={item} />
+          ))}
+        </div>
+      ) : (
+        <p>Nenhum item encontrado</p>
+      )}
     </main>
   );
 }

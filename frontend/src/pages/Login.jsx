@@ -14,7 +14,13 @@ function Login() {
       setToken(res.data.token);
       navigate('/admin');
     } catch (err) {
-      alert('Senha incorreta');
+      if (err.response?.status === 401) {
+        alert('Senha incorreta');
+      } else if (!err.response) {
+        alert('Falha de conexão com o servidor');
+      } else {
+        alert('Erro ao tentar logar');
+      }
     }
   };
 

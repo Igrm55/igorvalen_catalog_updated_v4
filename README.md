@@ -1,44 +1,43 @@
 # IgorValen Catálogo (MERN)
 
-Aplicação de catálogo reconstruída do zero usando **React + Vite + Tailwind** no frontend e **Node.js + Express + MongoDB** no backend.
+Aplicação de catálogo com **React + Vite + Tailwind** e **Node.js + Express + MongoDB**. Possui fallback em memória para facilitar o uso sem MongoDB.
 
-## Pré-requisitos
+## Requisitos
 
 - Node 18+
-- MongoDB local ou Docker
+- Docker Desktop (opcional para MongoDB)
 
-### Docker (opcional)
-
-```bash
-docker run -d --name iv-mongo -p 27017:27017 mongo:6
-```
-
-## Backend
+## Como rodar
 
 ```bash
-cd backend
-cp .env.example .env
-npm install
-npm run seed   # insere dados de exemplo
-npm start      # http://localhost:5000
+git clone <repo>
+cd igorvalen_catalog_updated_v4
+cp backend/.env.example backend/.env
+docker compose up -d    # opcional; fallback em memória se não usar
+npm install             # instala deps do backend e frontend
+npm run seed            # opcional: popula 5 itens
+npm run dev:all         # API 5000 e Web 5173
 ```
 
-## Frontend
+## URLs úteis
 
-```bash
-cd frontend
-npm install
-npm run dev    # http://localhost:5173
-```
+- Frontend: http://localhost:5173
+- API: http://localhost:5000
+- Healthcheck: http://localhost:5000/healthz
+
+Login de admin: senha padrão **1234** (configurável via `ADMIN_PASSWORD`).
+
+Se visualizar tela branca, limpe service workers em `chrome://serviceworker-internals` e recarregue.
 
 ## Teste rápido
 
 ```bash
-# API viva
 curl http://localhost:5000/healthz
 curl http://localhost:5000/api/items
 ```
 
-Acesse `/login` para entrar como admin (senha padrão: **1234**).
+## Scripts
 
-Dica (Windows/PowerShell): se usar Docker, abra o Docker Desktop antes de rodar.
+- `npm run dev:all` – inicia API e frontend.
+- `npm run seed` – insere itens de exemplo.
+- `npm test` – smoke tests backend e frontend.

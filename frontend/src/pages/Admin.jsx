@@ -7,12 +7,15 @@ function Admin() {
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchItems = () => {
+    setLoading(true);
     api
       .get('/items')
       .then((res) => setItems(res.data))
-      .catch(() => alert('Erro ao carregar itens'));
+      .catch(() => alert('Erro ao carregar itens'))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -30,14 +33,18 @@ function Admin() {
       setEditing(null);
       fetchItems();
     } catch (err) {
-      alert('Erro ao salvar');
+      alert(err.response?.data?.message || 'Erro ao salvar');
     }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Deseja remover?')) return;
-    await api.delete(`/items/${id}`);
-    fetchItems();
+    try {
+      await api.delete(`/items/${id}`);
+      fetchItems();
+    } catch (err) {
+      alert('Erro ao excluir item');
+    }
   };
 
   return (
@@ -77,40 +84,46 @@ function Admin() {
         />
       )}
 
-      <table className="w-full mt-4 border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">Nome</th>
-            <th className="border p-2">Preço</th>
-            <th className="border p-2">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item._id}>
-              <td className="border p-2">{item.name}</td>
-              <td className="border p-2">{item.price}</td>
-              <td className="border p-2 space-x-2">
-                <button
-                  onClick={() => {
-                    setEditing(item);
-                    setShowForm(true);
-                  }}
-                  className="text-blue-600"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(item._id)}
-                  className="text-red-600"
-                >
-                  Excluir
-                </button>
-              </td>
+      {loading ? (
+        <p>Carregando...</p>
+      ) : items.length ? (
+        <table className="w-full mt-4 border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Nome</th>
+              <th className="border p-2">Preço</th>
+              <th className="border p-2">Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item._id}>
+                <td className="border p-2">{item.name}</td>
+                <td className="border p-2">{item.price}</td>
+                <td className="border p-2 space-x-2">
+                  <button
+                    onClick={() => {
+                      setEditing(item);
+                      setShowForm(true);
+                    }}
+                    className="text-blue-600"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item._id)}
+                    className="text-red-600"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>Nenhum item encontrado</p>
+      )}
     </main>
   );
 }

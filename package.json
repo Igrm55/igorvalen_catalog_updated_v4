@@ -1,0 +1,15 @@
+{
+  "name": "igorvalen-catalog",
+  "private": true,
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "dev:api": "npm --prefix backend run dev",
+    "dev:front": "npm --prefix frontend run dev",
+    "dev:all": "concurrently -n API,WEB -c blue,green \"npm:dev:api\" \"npm:dev:front\"",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

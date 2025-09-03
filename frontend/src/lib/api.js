@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { getToken } from './auth';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL,
 });
 
 // Intercepta requisições para inserir o token JWT
