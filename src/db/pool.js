@@ -2,7 +2,10 @@
 
 let pool;
 
+ codex/corrigir-problemas-de-carregamento-xx0uhz
+
  codex/corrigir-problemas-de-carregamento-w3uit8
+ main
 async function initPool() {
   if (pool) return pool;
 
@@ -21,6 +24,9 @@ async function initPool() {
     }
   }
 
+ codex/corrigir-problemas-de-carregamento-xx0uhz
+  const { newDb } = await import('pg-mem');
+
 if (process.env.DATABASE_URL) {
   const { Pool } = require('pg');
   pool = new Pool({
@@ -36,6 +42,7 @@ if (process.env.DATABASE_URL) {
  main
 
   const { newDb } = require('pg-mem');
+ main
   const db = newDb();
   const { Pool } = db.adapters.createPg();
   pool = new Pool();
