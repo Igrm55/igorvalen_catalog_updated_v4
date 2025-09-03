@@ -8,7 +8,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { v2: cloudinary } = require('cloudinary');
+// rename variable to avoid potential global conflicts when bundlers combine modules
+const { v2: cloudinaryClient } = require('cloudinary');
 const productService = require('./services/productService');
 
 // senha do admin: definir ADMIN_PASSWORD no .env ou usar fallback 1234
@@ -86,7 +87,7 @@ async function start() {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  cloudinary.config({
+  cloudinaryClient.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -94,7 +95,7 @@ async function start() {
   });
 
   const storage = new CloudinaryStorage({
-    cloudinary,
+    cloudinary: cloudinaryClient,
     params: { folder: 'catalog' },
   });
   const upload = multer({ storage });
@@ -211,11 +212,11 @@ async function start() {
       };
 
       if (req.file) {
-        updates.imageUrl = req.file.path;
-        updates.imagePublicId = req.file.filename;
-        if (old.imagePublicId) {
-          cloudinary.uploader.destroy(old.imagePublicId).catch(() => {});
-        }
+          updates.imageUrl = req.file.path;
+          updates.imagePublicId = req.file.filename;
+          if (old.imagePublicId) {
+            cloudinaryClient.uploader.destroy(old.imagePublicId).catch(() => {});
+          }
       }
 
       const updated = await productService.update(id, updates);
@@ -232,9 +233,9 @@ async function start() {
       const existing = await productService.getById(id);
       if (!existing) return res.status(404).json({ error: 'Not found' });
 
-      if (existing.imagePublicId) {
-        cloudinary.uploader.destroy(existing.imagePublicId).catch(() => {});
-      }
+        if (existing.imagePublicId) {
+          cloudinaryClient.uploader.destroy(existing.imagePublicId).catch(() => {});
+        }
 
       await productService.remove(id);
       res.json({ ok: true });
