@@ -1,54 +1,43 @@
-# Catalog App
+# IgorValen Catálogo (MERN)
 
-A small full-stack product catalog ready for deployment on platforms like Render. The backend is built with Node.js and Express and persists data in PostgreSQL while product images are stored on Cloudinary.
+Aplicação de catálogo com **React + Vite + Tailwind** e **Node.js + Express + MongoDB**. Possui fallback em memória para facilitar o uso sem MongoDB.
 
-## Architecture
+## Requisitos
 
-- **Backend:** Node.js 18+, Express, pg, Multer
-- **Frontend:** Static assets served from the `public` folder
-- **Persistence:** PostgreSQL for product data and settings
-- **Images:** Uploaded directly to Cloudinary
+- Node 18+
+- Docker Desktop (opcional para MongoDB)
 
-## Local Development
+## Como rodar
 
-1. **Install dependencies**
+```bash
+git clone <repo>
+cd igorvalen_catalog_updated_v4
+cp backend/.env.example backend/.env
+docker compose up -d    # opcional; fallback em memória se não usar
+npm install             # instala deps do backend e frontend
+npm run seed            # opcional: popula 5 itens
+npm run dev:all         # API 5000 e Web 5173
+```
 
-   ```bash
-   npm install
-   ```
+## URLs úteis
 
-2. **Create a `.env` file** with the following variables:
+- Frontend: http://localhost:5173
+- API: http://localhost:5000
+- Healthcheck: http://localhost:5000/healthz
 
-   ```bash
-   DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE
-   ADMIN_PASSWORD=your_secure_password
-   CLOUDINARY_CLOUD_NAME=your_cloud_name
-   CLOUDINARY_API_KEY=your_api_key
-   CLOUDINARY_API_SECRET=your_api_secret
-   ```
+Login de admin: senha padrão **1234** (configurável via `ADMIN_PASSWORD`).
 
-3. **Run the application**
+Se visualizar tela branca, limpe service workers em `chrome://serviceworker-internals` e recarregue.
 
-   ```bash
-   npm start
-   # open http://localhost:4000
-   ```
+## Teste rápido
 
-4. **Run tests**
+```bash
+curl http://localhost:5000/healthz
+curl http://localhost:5000/api/items
+```
 
-   ```bash
-   npm test
-   ```
+## Scripts
 
-## Deployment on Render
-
-Configure a web service with `npm install` as the build command and `npm start` as the start command. In the Render dashboard set the following environment variables:
-
-- `DATABASE_URL`
-- `ADMIN_PASSWORD`
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-
-The application no longer requires persistent disk mounts because all data and images are stored in managed services.
-
+- `npm run dev:all` – inicia API e frontend.
+- `npm run seed` – insere itens de exemplo.
+- `npm test` – smoke tests backend e frontend.
