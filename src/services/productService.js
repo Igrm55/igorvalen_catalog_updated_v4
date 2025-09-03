@@ -1,6 +1,6 @@
 'use strict';
 
-const pool = require('../db/pool');
+const { getPool, initPool } = require('../db/pool');
 
 function mapProduct(row) {
   if (!row) return null;
@@ -22,6 +22,8 @@ function mapProduct(row) {
 }
 
 async function initializeDatabase() {
+  await initPool();
+  const pool = getPool();
   await pool.query(`CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     name TEXT,
@@ -46,6 +48,7 @@ async function initializeDatabase() {
 }
 
 async function getSettings() {
+  const pool = getPool();
   const { rows } = await pool.query('SELECT categories_order FROM settings WHERE id=1');
   if (rows[0]) {
     return { categoriesOrder: JSON.parse(rows[0].categories_order || '[]') };
@@ -58,21 +61,25 @@ async function updateSettingsCategory(cat) {
   const settings = await getSettings();
   if (!settings.categoriesOrder.includes(cat)) {
     settings.categoriesOrder.push(cat);
+    const pool = getPool();
     await pool.query('UPDATE settings SET categories_order=$1 WHERE id=1', [JSON.stringify(settings.categoriesOrder)]);
   }
 }
 
 async function getAll() {
+  const pool = getPool();
   const { rows } = await pool.query('SELECT * FROM products');
   return rows.map(mapProduct);
 }
 
 async function getById(id) {
+  const pool = getPool();
   const { rows } = await pool.query('SELECT * FROM products WHERE id=$1', [id]);
   return mapProduct(rows[0]);
 }
 
 async function create(data) {
+  const pool = getPool();
   const { rows: maxRows } = await pool.query('SELECT COALESCE(MAX(sort_order),0)+1 AS next FROM products');
   const sortOrder = maxRows[0].next;
   const { rows } = await pool.query(
@@ -100,6 +107,7 @@ async function create(data) {
 }
 
 async function update(id, updates) {
+  const pool = getPool();
   const fields = [];
   const values = [];
   let idx = 1;
@@ -136,10 +144,12 @@ async function update(id, updates) {
 }
 
 async function remove(id) {
+  const pool = getPool();
   await pool.query('DELETE FROM products WHERE id=$1', [id]);
 }
 
 async function reorder(ordered) {
+  const pool = getPool();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
