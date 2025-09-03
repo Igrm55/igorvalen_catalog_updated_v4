@@ -7,16 +7,24 @@ self.addEventListener('message', (event) => {
   if (msg.type === 'ENABLE_OFFLINE') {
     offlineEnabled = true;
     event.waitUntil((async () => {
-      const staticCache = await caches.open(STATIC_CACHE);
-      await staticCache.addAll(['/', '/index.html', '/img/placeholder.png']);
-      const dataCache = await caches.open(DATA_CACHE);
-      await dataCache.add('/api/catalog');
-      await dataCache.put('offline-enabled', new Response('true'));
+      try {
+        const staticCache = await caches.open(STATIC_CACHE);
+        await staticCache.addAll(['/', '/index.html', '/img/placeholder.png']);
+        const dataCache = await caches.open(DATA_CACHE);
+        await dataCache.add('/api/catalog');
+        await dataCache.put('offline-enabled', new Response('true'));
+      } catch (err) {
+        offlineEnabled = false;
+        console.error('Falha ao ativar offline:', err);
+      }
     })());
   }
   if (msg.type === 'DISABLE_OFFLINE') {
     offlineEnabled = false;
-    event.waitUntil(caches.delete(DATA_CACHE));
+    event.waitUntil((async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.startsWith('iv-')).map(k => caches.delete(k)));
+    })());
   }
 });
 
