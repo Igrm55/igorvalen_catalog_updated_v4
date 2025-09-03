@@ -598,6 +598,7 @@
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
         const products = Array.isArray(catalog.products) ? catalog.products : [];
         const order = ALLOWED_CATEGORIES;
         const grouped = (activeCategory ? [activeCategory] : order)
@@ -608,6 +609,19 @@
               .sort((a,b)=> String(a.name || '').localeCompare(String(b.name || '')))
           }))
           .filter(g => g.products.length > 0);
+
+      let order = (catalog.settings.categoriesOrder || []).map(toDisplay);
+      if (!order.length) order = [...ALLOWED_CATEGORIES];
+      order = order.filter(c => catalog.products.some(p => toDisplay(p.category) === c));
+      const extras = Array.from(new Set(catalog.products.map(p => toDisplay(p.category)))).filter(c => !order.includes(c));
+      order = order.concat(extras);
+      const grouped = (activeCategory ? [activeCategory] : order).map(c => ({
+        category: c,
+        products: catalog.products
+          .filter(p => toDisplay(p.category) === c)
+          .sort((a,b)=> String(a.name || '').localeCompare(String(b.name || '')))
+      })).filter(g => g.products.length > 0);
+ main
 
       return (
         <>
@@ -797,7 +811,11 @@
         try {
           const data = await api.getAdminProducts();
           if (data?.error) throw new Error(data.error);
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
           setProducts(Array.isArray(data) ? data : []);
+
+          setProducts(data);
+ main
         } catch (err) {
           setError(err.message || 'Erro ao carregar produtos');
           setProducts([]);
@@ -935,6 +953,7 @@
       const [loading,setLoading]=useState(true);
       const [imagePreview,setImagePreview]=useState(null);
       const fileRef = useRef(null);
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
         const [categories,setCategories]=useState(ALLOWED_CATEGORIES);
         const [flavors,setFlavors]=useState(['']);
         const [error,setError]=useState('');
@@ -961,6 +980,28 @@
                     setFlavors(['']);
                   }
                 } catch {
+
+      const [categories,setCategories]=useState(ALLOWED_CATEGORIES);
+      const [flavors,setFlavors]=useState(['']);
+      const [error,setError]=useState('');
+
+        useEffect(() => {
+        (async () => {
+          try {
+            const s = await (await fetch('/api/settings')).json();
+            const cats = (s.categoriesOrder || []).map(toDisplay);
+            const finalCats = cats.length ? cats : ALLOWED_CATEGORIES;
+            setCategories(finalCats);
+            if (id) {
+              try {
+                const p = await api.getProduct(id);
+                if (p && !p.error) {
+                  setProduct({ ...p, category: toDisplay(p.category) });
+                  if (p.imageUrl) setImagePreview(p.imageUrl);
+                  const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
+                  setFlavors(fl);
+                } else {
+ main
                   setProduct({ name: '', category: finalCats[0] || '', active: true });
                 }
               } else {
@@ -990,6 +1031,7 @@
           setImagePreview(URL.createObjectURL(file));
         }
       }
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
         const save = async ()=>{
           setError('');
           if (!product.name || !String(product.name).trim()) {
@@ -997,6 +1039,11 @@
             return;
           }
           const fd = new FormData();
+
+      const save = async ()=>{
+        setError('');
+        const fd = new FormData();
+ main
         Object.entries(product).forEach(([k,v])=>{
           if (k==='flavors') return;
           if (k==='category'){ fd.append('category', toInternal(v)); return; }
