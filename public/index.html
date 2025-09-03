@@ -56,10 +56,6 @@
     .iso-round { width:140px; height:140px; border-radius:9999px; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .iso-round img{ width:80%; height:80%; object-fit:contain; }
     @media (min-width: 640px) {
-      .ism-section { flex-direction: row !important; align-items: stretch !important; }
-      .ism-section .ism-image { width:50%; display:grid; grid-template-rows:1fr 1fr; grid-template-columns:1fr; height:100%; }
-      .ism-section .ism-image img { width:100%; height:100%; object-fit:cover; }
-      .ism-section .ism-text { width:50%; max-width:none; }
     }
     </style>
 </head>
@@ -113,10 +109,38 @@
     const toInternal = (label) =>
       Object.entries(DISPLAY_LABELS).find(([orig, disp]) => disp === label)?.[0] || label;
 
-    const getCategoryIcon = (cat) => {
-      const key = toDisplay(cat);
-      return categoryIcons[key] || categoryIcons.default;
-    };
+      const getCategoryIcon = (cat) => {
+        const key = toDisplay(cat);
+        return categoryIcons[key] || categoryIcons.default;
+      };
+
+      const ismItems = [
+        { src: "https://group-ism.com/br/wp-content/uploads/2023/07/ism-9001.png", title: "ISO 9001", desc: "Gestão da qualidade e melhoria contínua." },
+        { src: "https://group-ism.com/br/wp-content/uploads/2023/07/ism-14001.png", title: "ISO 14001", desc: "Gestão ambiental e proteção do meio ambiente." },
+        { src: "https://group-ism.com/br/wp-content/uploads/2023/07/ism-45001-ES.png", title: "ISO 45001", desc: "Segurança e saúde ocupacional no trabalho." }
+      ];
+
+      const ISMSection = () => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {ismItems.map((item, idx) => (
+            <div key={idx} className="text-white">
+              <div className="iso-round shadow-lg">
+                <img
+                  loading="lazy"
+                  src={item.src}
+                  alt={item.title}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<span class='text-xs text-gray-500'>Imagem não<br>disponível</span>`;
+                  }}
+                />
+              </div>
+              <h3 className="font-bold text-lg">{item.title}</h3>
+              <p className="text-sm opacity-90">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      );
 
     let adminToken = '';
     const api = {
@@ -340,14 +364,33 @@
         };
       },[]);
 
-      useEffect(()=>{
-        if ('serviceWorker' in navigator){
-          navigator.serviceWorker.ready.then(reg=>{
-            reg.active?.postMessage({type: offline? 'ENABLE_OFFLINE':'DISABLE_OFFLINE'});
-          });
-        }
-        localStorage.setItem('offlineEnabled', offline);
-      }, [offline]);
+        useEffect(() => {
+          if (!('serviceWorker' in navigator)) {
+            localStorage.setItem('offlineEnabled', offline);
+            return;
+          }
+          if (offline) {
+            (async () => {
+              try {
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                reg.active?.postMessage({ type: 'ENABLE_OFFLINE' });
+              } catch (e) {
+                console.warn('SW register', e);
+              }
+            })();
+          } else {
+            (async () => {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              for (const r of regs) {
+                try { r.active?.postMessage({ type: 'DISABLE_OFFLINE' }); } catch {}
+                await r.unregister();
+              }
+              const keys = await caches.keys();
+              await Promise.all(keys.filter(k => k.startsWith('iv-')).map(k => caches.delete(k)));
+            })();
+          }
+          localStorage.setItem('offlineEnabled', offline);
+        }, [offline]);
 
       const toggleOffline = ()=> setOffline(v=>!v);
 
@@ -360,17 +403,17 @@
       const [showExportOptions, setShowExportOptions] = useState(false);
       return (
         <header className="sticky top-0 z-40 shadow-lg" style={{ backgroundColor: 'var(--brand-green)' }}>
-          <div className="max-w-screen-xl mx-auto px-4 md:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 md:gap-6">
-            <div
-              className="bg-white px-4 py-2 rounded-xl shadow cursor-pointer flex-shrink-0 transform hover:scale-105 transition-transform"
-              onClick={() => navigate('home')}
-            >
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold" style={{ color: 'var(--brand-green)' }}>Igor</span>
-                <span className="text-2xl font-bold" style={{ color: 'var(--brand-red)' }}>Valen</span>
+            <div className="max-w-screen-xl mx-auto px-4 md:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 md:gap-6">
+              <div
+                className="bg-white px-3 py-1 h-12 rounded-xl shadow cursor-pointer flex-shrink-0 transform hover:scale-105 transition-transform flex items-center"
+                onClick={() => navigate('home')}
+              >
+                <div className="flex items-baseline">
+                  <span className="text-2xl font-bold" style={{ color: 'var(--brand-green)' }}>Igor</span>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--brand-red)' }}>Valen</span>
+                </div>
+                <span className="block text-sm -mt-1 font-medium text-gray-800 text-right">Distribuidora</span>
               </div>
-              <span className="block text-sm -mt-1 font-medium text-gray-800 text-right">Distribuidora</span>
-            </div>
 
             <div className="flex items-center gap-4 md:gap-6 flex-wrap text-white font-semibold">
               <button onClick={() => navigate('home')} className="hover:text-green-200 transition-colors">
@@ -555,6 +598,18 @@
         contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
+        const products = Array.isArray(catalog.products) ? catalog.products : [];
+        const order = ALLOWED_CATEGORIES;
+        const grouped = (activeCategory ? [activeCategory] : order)
+          .map(c => ({
+            category: c,
+            products: products
+              .filter(p => toDisplay(p.category) === c)
+              .sort((a,b)=> String(a.name || '').localeCompare(String(b.name || '')))
+          }))
+          .filter(g => g.products.length > 0);
+
       let order = (catalog.settings.categoriesOrder || []).map(toDisplay);
       if (!order.length) order = [...ALLOWED_CATEGORIES];
       order = order.filter(c => catalog.products.some(p => toDisplay(p.category) === c));
@@ -566,6 +621,7 @@
           .filter(p => toDisplay(p.category) === c)
           .sort((a,b)=> String(a.name || '').localeCompare(String(b.name || '')))
       })).filter(g => g.products.length > 0);
+ main
 
       return (
         <>
@@ -577,35 +633,6 @@
                 <p className="text-gray-700">Explore nossas ofertas e aproveite ótimos preços.</p>
               </div>
 
-              <div className="my-8 text-center">
-                <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
-                <p className="max-w-2xl mx-auto mb-8 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.4)'}}>Seguimos recomendações rigorosas e controle de qualidade.</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  [{src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-9001.png', title:'ISO 9001', desc:'Gestão da qualidade e melhoria contínua.'},
-                   {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-14001.png', title:'ISO 14001', desc:'Gestão ambiental e proteção do meio ambiente.'},
-                   {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-45001-ES.png', title:'ISO 45001', desc:'Segurança e saúde ocupacional no trabalho.'}].map((it,idx)=>(
-                    <div key={idx} className="text-white">
-                      <div className="iso-round shadow-lg">
-                        <img loading="lazy" src={it.src} alt={it.title} onError={(e)=>{e.target.style.display='none'; e.target.parentElement.innerHTML = `<span class='text-xs text-gray-500'>Imagem não<br>disponível</span>`}} />
-                      </div>
-                      <h3 className="font-bold text-lg">{it.title}</h3>
-                      <p className="text-sm opacity-90">{it.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
-                <img loading="lazy" src="/img/banners/brussels.jpg" alt="Cerveja Brussels" className="w-full h-64 object-cover" onError={(e)=>{e.target.style.display='none'; e.target.parentElement.style.display='none';}}/>
-                <div className="p-6 text-gray-800 bg-white/95 border border-gray-100">
-                  <h3 className="text-2xl font-bold mb-2 text-green-700">Brussels Pure Malte: a cerveja que se tornou febre nas redes sociais.</h3>
-                  <p className="mb-4">Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega com reconhecimento imediato do público.</p>
-                  <p>Seus rótulos chamam a atenção na geladeira e os formatos (lata 350 ml e garrafa 275 ml) são perfeitos para expor. Com um preço que garante ótima margem, o giro é certo.</p>
-                </div>
-              </div>
-              <div className="banner mb-6 rounded-2xl overflow-hidden shadow-lg">
-                <img loading="lazy" src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
-              </div>
             </>
           )}
 
@@ -647,15 +674,15 @@
                   onChange={(e) => setQuery(e.target.value)}
                   className="flex-1 w-full px-4 py-3 bg-white border border-gray-300 text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
-                {query && (
-                  <button
-                    type="button"
-                    onClick={() => { setQuery(''); loadCatalog('', activeCategory); }} // sem scroll
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300"
-                  >
-                    Limpar
-                  </button>
-                )}
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuery(''); loadCatalog('', activeCategory); }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300"
+                    >
+                      Limpar
+                    </button>
+                  )}
                 <button
                   type="submit"
                   className="px-6 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition-colors"
@@ -678,100 +705,64 @@
               <p className="text-gray-700 font-semibold">Nenhum produto encontrado. Limpe a busca para ver todos os itens.</p>
             </div>
           ) : (
-            <>
-              {grouped.map(group=>{
-              const hasWaveBg = ['Bebidas não alcoólicas','Bomboniere','Utilidades'].includes(group.category);
-              const content = (
-                <>
-                    {activeCategory && group.category === 'Bebidas alcoólicas' && (
-
-              const hasWaveBg = ['Bebidas não alcoólicas','Bomboniere','Utilidades'].includes(group.category);
-              const content = (
-                <>
-                    {group.category === 'Bebidas alcoólicas' && (
-                      <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
-                        <img loading="lazy" src="/img/banners/brussels.jpg" alt="Cerveja Brussels" className="w-full h-64 object-cover" onError={(e)=>{e.target.style.display='none'; e.target.parentElement.style.display='none';}}/>
-                        <div className="p-6 text-gray-800 bg-white/95 border border-gray-100">
-                          <h3 className="text-2xl font-bold mb-2 text-green-700">Brussels Pure Malte: a cerveja que se tornou febre nas redes sociais.</h3>
-                          <p className="mb-4">Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega com reconhecimento imediato do público.</p>
-                          <p>Seus rótulos chamam a atenção na geladeira e os formatos (lata 350 ml e garrafa 275 ml) são perfeitos para expor. Com um preço que garante ótima margem, o giro é certo.</p>
-                        </div>
-                      </div>
-                    )}
-                    {activeCategory && group.category === 'Bebidas não alcoólicas' && (
-
-                    {group.category === 'Bebidas não alcoólicas' && (
-
-                  {group.category === 'Bebidas alcoólicas' && (
-                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img loading="lazy" src="/img/banners/bebidas-alcoolicas.jpg" alt="Bebidas alcoólicas" className="w-full h-48 object-cover" onError={(e)=>{e.target.style.display='none'; e.target.parentElement.style.display='none';}}/>
-                    </div>
-                  )}
-                  {group.category === 'Bebidas não alcoólicas' && (
-                    <div className="mb-8 panel p-6 overflow-hidden text-gray-800">
-                      <div className="ism-section flex flex-col gap-4 sm:flex-row sm:gap-0">
-                        <div className="ism-image w-full">
-                          <img loading="lazy" src="https://i.ibb.co/MkBdYQ1Z/484319138-122166789608286629-3240958178884466690-n.jpg" alt="ISM Brasil" className="w-full h-full object-cover"/>
-                          <img loading="lazy" src="https://i.ibb.co/PvnmNKKw/100.jpg" alt="ISM Brasil produtos" className="w-full h-full object-cover"/>
-                        </div>
-                        <div className="ism-text w-full sm:pl-6">
-                          <h3 className="text-xl font-bold text-green-700 mb-1">ISM Brasil: portfólio de alto giro para o seu negócio.</h3>
-                          <p className="text-xs leading-tight">Multinacional presente em 7 países, com fábrica em Alagoinhas–BA — cidade reconhecida pela pureza da sua água —, a ISM entrega um mix que vende o dia todo:</p>
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-[9px] leading-snug">
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">Goob</h4>
-                              <p>Refrescância e sabor. Goob se consolidou no mercado baiano. Segundo o Instituto Baiano de Pesquisa e Consumo, Goob registrou um crescimento de 39% em vendas em 2025, figurando entre os 10 refrigerantes mais consumidos na região.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">Lôa</h4>
-                              <p>Pureza que se sente a cada gole. Originária de Alagoinhas — reconhecida por ter a 2ª melhor água do mundo —, Lôa é a líder absoluta em sua categoria. Sua qualidade superior a torna um produto de giro rápido e garantido.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">EnerUp</h4>
-                              <p>A combinação perfeita de taurina, cafeína, guaraná e vitaminas. EnerUp já se tornou um fenômeno de consumo, especialmente em combinação com destilados.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">DrinkT</h4>
-                              <p>Sabor, praticidade e refrescância. Ideal para o clima da nossa terra, o DrinkT apresenta um aumento de 27% no volume de vendas durante os dias mais quentes, sendo a escolha inteligente para se refrescar com qualidade e sabor.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">Yulo</h4>
-                              <p>O suco que conquistou as famílias. Yulo se destaca pela altíssima taxa de fidelidade. Dados da Central de Análise de Varejo da Bahia mostram que 6 em cada 10 famílias que experimentam realizam a recompra em menos de 30 dias.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">GuaranUp</h4>
-                              <p>A dose ideal de energia para a rotina. Posicionado próximo a balcões de salgados/lanches, GuaranUp demonstra um aumento de 19% no giro de estoque, provando ser o acompanhamento perfeito para uma refeição rápida e energizante.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">Glow Ice</h4>
-                              <p>Leveza e autenticidade. Com um sabor único, Glow Ice atrai pela curiosidade e conquista pelo paladar. Estatísticas de pontos de venda indicam que 1 em cada 3 clientes experimenta o produto logo na primeira semana de exposição.</p>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-[11px]">Gostolac</h4>
-                              <p>Sabor e economia. Desenvolvido para oferecer um sabor delicioso e um rendimento superior, Gostolac se destaca na categoria. Ele oferece um rendimento 15% maior por litro em comparação com a média dos concorrentes.</p>
-                            </div>
+              <>
+                {grouped.map(group => {
+                  const hasWaveBg = ['Bebidas não alcoólicas', 'Bomboniere', 'Utilidades'].includes(group.category);
+                  const inner = (
+                    <>
+                      <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>
+                        {getCategoryIcon(group.category)}{toDisplay(group.category)}
+                      </h2>
+                      {activeCategory === 'Bebidas alcoólicas' && group.category === 'Bebidas alcoólicas' && (
+                        <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
+                          <img
+                            loading="lazy"
+                            src="/img/banners/brussels.jpg"
+                            alt="Cerveja Brussels"
+                            className="w-full h-64 object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.style.display = 'none';
+                            }}
+                          />
+                          <div className="p-6 text-gray-800 bg-white/95 border border-gray-100">
+                            <h3 className="text-2xl font-bold mb-2 text-green-700">Brussels Pure Malte: a cerveja que se tornou febre nas redes sociais.</h3>
+                            <p className="mb-4">Com campanhas estreladas por Ronaldinho Gaúcho, a Brussels chega com reconhecimento imediato do público.</p>
+                            <p>Seus rótulos chamam a atenção na geladeira e os formatos (lata 350 ml e garrafa 275 ml) são perfeitos para expor. Com um preço que garante ótima margem, o giro é certo.</p>
                           </div>
                         </div>
+                      )}
+                      {activeCategory === 'Bebidas não alcoólicas' && group.category === 'Bebidas não alcoólicas' && (
+                        <div className="mb-8"><ISMSection /></div>
+                      )}
+                      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                          {group.products.map(p => (
+                            <ProductCard
+                              key={p.id}
+                              product={p}
+                              priceMode={priceMode}
+                              showPrices={showPrices}
+                              onSelect={setSelectedProduct}
+                            />
+                          ))}
+                        </div>
                       </div>
+                    </>
+                  );
+                  return (
+                    <div key={group.category} className="mb-12">
+                      {hasWaveBg ? (
+                        <div className="category-wave-wrapper">
+                          <div className="category-content">{inner}</div>
+                        </div>
+                      ) : (
+                        inner
+                      )}
                     </div>
-                  )}
-                  <h2 className="flex items-center gap-2 text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{getCategoryIcon(group.category)}{toDisplay(group.category)}</h2>
-                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6`}>
-                      {group.products.map(p=><ProductCard key={p.id} product={p} priceMode={priceMode} showPrices={showPrices} onSelect={setSelectedProduct}/>)}
-                    </div>
-                  </div>
-                </>
-              );
-              return (
-                <div key={group.category} className="mb-12">
-                  {hasWaveBg? (
-                    <div className="category-wave-wrapper"><div className="category-content">{content}</div></div>
-                  ) : content}
-                </div>
-              )
-            })}
-              <footer className="mt-8 w-full bg-red-700 text-white py-12 flex flex-col items-center justify-center text-center">
+                  );
+                })}
+                <footer className="mt-8 w-full bg-red-700 text-white py-12 flex flex-col items-center justify-center text-center">
                 <span className="text-5xl mb-4">🤝</span>
                 <p className="text-2xl font-bold">Você chegou ao final do catálogo!</p>
                 <p className="text-base mt-3 max-w-xl px-4">Foi um prazer ter você aqui. Agradecemos de coração pela visita e estamos sempre prontos para atender suas necessidades. Volte sempre!</p>
@@ -820,7 +811,11 @@
         try {
           const data = await api.getAdminProducts();
           if (data?.error) throw new Error(data.error);
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
+          setProducts(Array.isArray(data) ? data : []);
+
           setProducts(data);
+ main
         } catch (err) {
           setError(err.message || 'Erro ao carregar produtos');
           setProducts([]);
@@ -958,6 +953,34 @@
       const [loading,setLoading]=useState(true);
       const [imagePreview,setImagePreview]=useState(null);
       const fileRef = useRef(null);
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
+        const [categories,setCategories]=useState(ALLOWED_CATEGORIES);
+        const [flavors,setFlavors]=useState(['']);
+        const [error,setError]=useState('');
+
+        useEffect(() => {
+          (async () => {
+            try {
+              const s = await (await fetch('/api/settings')).json();
+              const cats = Array.isArray(s.categoriesOrder)
+                ? s.categoriesOrder.map(toDisplay).filter(c => ALLOWED_CATEGORIES.includes(c))
+                : [];
+              const finalCats = ALLOWED_CATEGORIES.map(c => (cats.includes(c) ? c : c));
+              setCategories(finalCats);
+              if (id) {
+                try {
+                  const p = await api.getProduct(id);
+                  if (p && !p.error) {
+                    setProduct({ ...p, category: toDisplay(p.category) });
+                    if (p.imageUrl) setImagePreview(p.imageUrl);
+                    const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
+                    setFlavors(fl);
+                  } else {
+                    setProduct({ name: '', category: finalCats[0] || '', active: true });
+                    setFlavors(['']);
+                  }
+                } catch {
+
       const [categories,setCategories]=useState(ALLOWED_CATEGORIES);
       const [flavors,setFlavors]=useState(['']);
       const [error,setError]=useState('');
@@ -978,24 +1001,22 @@
                   const fl = p.flavors ? p.flavors.split(',').map(f=>f.trim()) : [''];
                   setFlavors(fl);
                 } else {
+ main
                   setProduct({ name: '', category: finalCats[0] || '', active: true });
-                  setFlavors(['']);
                 }
-              } catch (err) {
+              } else {
                 setProduct({ name: '', category: finalCats[0] || '', active: true });
+                setFlavors(['']);
               }
-            } else {
-              setProduct({ name: '', category: finalCats[0] || '', active: true });
+            } catch (err) {
+              console.error(err);
+              setCategories(ALLOWED_CATEGORIES);
+              setProduct({ name: '', category: ALLOWED_CATEGORIES[0] || '', active: true });
               setFlavors(['']);
             }
-          } catch (err) {
-            console.error(err);
-            setProduct({ name: '', category: '', active: true });
-            setFlavors(['']);
-          }
-          setLoading(false);
-        })();
-      }, [id]);
+            setLoading(false);
+          })();
+        }, [id]);
 
       const change = (e)=>{
         const { name, value, type, checked } = e.target;
@@ -1010,9 +1031,19 @@
           setImagePreview(URL.createObjectURL(file));
         }
       }
+ codex/fix-security-vulnerability-in-admin-endpoints-jh432q
+        const save = async ()=>{
+          setError('');
+          if (!product.name || !String(product.name).trim()) {
+            setError('Nome é obrigatório');
+            return;
+          }
+          const fd = new FormData();
+
       const save = async ()=>{
         setError('');
         const fd = new FormData();
+ main
         Object.entries(product).forEach(([k,v])=>{
           if (k==='flavors') return;
           if (k==='category'){ fd.append('category', toInternal(v)); return; }
@@ -1114,17 +1145,6 @@
 
     ReactDOM.render(<AppProvider><Header/><OfflineNotice/><main><App/></main></AppProvider>, document.getElementById('root'));
 
-    if ('serviceWorker' in navigator){
-      window.addEventListener('load', async ()=>{
-        try{
-          const regs = await navigator.serviceWorker.getRegistrations();
-          regs.forEach(r=>{
-            if (!r.active || (r.active && !r.active.scriptURL.endsWith('/sw.js'))) r.unregister();
-          });
-          await navigator.serviceWorker.register('/sw.js');
-        }catch(e){ console.warn('SW',e) }
-      })
-    }
   </script>
 </body>
 </html>

@@ -21,7 +21,10 @@ self.addEventListener('message', (event) => {
   }
   if (msg.type === 'DISABLE_OFFLINE') {
     offlineEnabled = false;
-    event.waitUntil(caches.delete(DATA_CACHE));
+    event.waitUntil((async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.startsWith('iv-')).map(k => caches.delete(k)));
+    })());
   }
 });
 
