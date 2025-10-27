@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>­</title> 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza mais claro */
+        }
+        .print-container {
+             max-width: 1200px; /* Limita largura no modo tela */
+             margin: 2rem auto; /* Centraliza na tela */
+             padding: 2.5rem; /* Aumenta padding */
+             background-color: #ffffff; /* Fundo branco para a área de conteúdo */
+             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); /* Sombra mais pronunciada */
+             border-radius: 8px; /* Bordas arredondadas no container */
+        }
+        .category-title {
+            font-size: 1.6rem; /* Aumenta um pouco */
+            font-weight: 700; /* Bold */
+            color: #ffffff; /* Texto branco */
+            background-color: #0f8a3a; /* Fundo Verde da marca */
+            margin-top: 2.5rem; /* Aumenta espaço antes */
+            margin-bottom: 1.5rem; /* Aumenta espaço depois */
+            padding: 0.75rem 1rem; /* Padding interno */
+            border-radius: 6px; /* Bordas arredondadas */
+            page-break-after: avoid; /* Evita quebra de página logo após o título */
+            page-break-inside: avoid; /* Tenta manter o título e pelo menos um item juntos */
+        }
+        .category-title:first-of-type {
+             margin-top: 0; /* Remove margem superior do primeiro título */
+        }
+        .product-item {
+            page-break-inside: avoid; /* Evita quebra de página DENTRO de um item de produto */
+            border: 1px solid #e5e7eb; /* Borda cinza mais clara */
+            border-radius: 0.5rem; /* Bordas menos arredondadas */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            background-color: #ffffff;
+            transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out; /* Transição suave */
+        }
+         .product-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra mais suave no hover */
+            transform: translateY(-2px); /* Efeito mais sutil */
+         }
+        .product-image-container {
+            height: 140px; /* Reduz altura da imagem */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem; /* Reduz padding */
+            background-color: #ffffff; /* Fundo branco para imagem */
+            border-bottom: 1px solid #f3f4f6; /* Linha separadora bem clara */
+        }
+        .product-image {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease-in-out;
+        }
+        .product-item:hover .product-image {
+             transform: scale(1.03); /* Zoom bem sutil */
+        }
+        .product-name {
+            padding: 0.75rem 0.5rem; /* Ajusta padding */
+            font-size: 0.8rem; /* Reduz fonte */
+            font-weight: 600;
+            line-height: 1.25; /* Ajusta altura da linha */
+            color: #374151; /* Cinza mais escuro */
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px; /* Reduz altura mínima */
+        }
+
+        /* Mensagem de instrução */
+        #print-instructions {
+            background-color: #e0f2fe; /* Fundo azul claro */
+            border-left: 4px solid #38b2ac; /* Borda verde-azul */
+            color: #2c5282; /* Texto azul escuro */
+            padding: 1.25rem 1.5rem; /* Padding */
+            border-radius: 8px;
+            margin-bottom: 2.5rem; /* Margem inferior */
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+         #print-instructions strong {
+             font-weight: 700;
+             color: #1a365d; /* Tom mais escuro */
+         }
+         #print-instructions code {
+            background-color: #e2e8f0;
+            padding: 3px 6px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9rem;
+            color: #4a5568;
+         }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact !important; /* Força cores de fundo */
+                print-color-adjust: exact !important;
+                 background-color: #ffffff !important;
+                 margin: 0;
+                 padding: 0;
+            }
+            .no-print {
+                display: none !important; /* Garante que será escondido */
+            }
+            .print-container {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                padding: 1cm 1.2cm; /* Reduz margens horizontais para ganhar espaço */
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+            }
+             h1 { /* Título principal na impressão */
+                font-size: 16pt !important; /* Reduz tamanho */
+                color: #000000 !important;
+                margin-bottom: 0.8cm !important; /* Reduz margem */
+                padding-bottom: 0.15cm;
+                border-bottom: 1px solid #ccc;
+             }
+             .category-title {
+                font-size: 12pt !important; /* Reduz tamanho */
+                margin-top: 1cm !important; /* Ajusta margem */
+                margin-bottom: 0.5cm !important; /* Reduz margem */
+                padding: 0.3cm 0.5cm !important; /* Ajusta padding */
+                border-radius: 4px !important;
+                background-color: #0f8a3a !important;
+                color: #ffffff !important;
+                border-bottom: none !important;
+                page-break-before: auto !important;
+                page-break-after: avoid !important;
+            }
+             .category-title:first-of-type {
+                 margin-top: 0 !important;
+             }
+            .grid {
+                grid-template-columns: repeat(6, 1fr) !important; /* <<< 6 COLUNAS AQUI */
+                gap: 12px !important; /* Reduz espaçamento entre itens */
+                margin-bottom: 1cm !important; /* Espaço após grid */
+            }
+             .product-item {
+                 border: 1px solid #dddddd !important; /* Borda mais clara */
+                 border-radius: 4px !important; /* Menos arredondado */
+                 box-shadow: none !important;
+                 transform: none !important;
+                 page-break-inside: avoid;
+             }
+             .product-image-container {
+                height: 90px !important; /* Reduz altura da imagem */
+                background-color: #ffffff !important;
+                 padding: 4px !important; /* Reduz padding */
+                 border-bottom: 1px solid #f0f0f0 !important; /* Borda bem clara */
+            }
+            .product-image {
+                transform: none !important;
+            }
+             .product-name {
+                 font-size: 7pt !important; /* Reduz ainda mais a fonte */
+                 padding: 6px 4px !important; /* Reduz padding */
+                 min-height: 30px !important; /* Reduz altura mínima */
+                 color: #000000 !important;
+                 line-height: 1.1 !important; /* Reduz altura da linha */
+                 font-weight: 500 !important; /* Fonte normal */
+             }
+             /* Adiciona numeração de página */
+             @page {
+                 margin: 1.2cm; /* Reduz margens da página */
+                 @bottom-center {
+                    content: "Página " counter(page);
+                    font-size: 8pt; /* Fonte menor */
+                    color: #666;
+                    vertical-align: bottom;
+                    padding-bottom: 0.4cm;
+                 }
+             }
+        }
+    </style>
+</head>
+<body class="print-container">
+
+    <div class="text-center no-print">
+         <div id="print-instructions">
+             <strong>Para obter o catálogo em PDF sem cortes e com a melhor qualidade:</strong><br/>
+             1. Pressione <code>Ctrl+P</code> (ou <code>Cmd+P</code> no Mac) para abrir a caixa de diálogo de impressão do seu navegador.<br/>
+             2. No destino, selecione <strong>"Salvar como PDF"</strong>.<br/>
+             3. Ajuste as configurações (margens, layout) se necessário e salve o arquivo.
+         </div>
+    </div>
+
+    <div id="catalogContent">
+        
+
+<div id="productGridContainer">
+             
+
+</div>
+    </div>
+
+
+    <script>
+        // --- Definição dos Dados ---
+        const products = [
+             // Bebidas não alcoólicas (mantido igual)
+            { name: 'Refrigerante Goob 2L', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/23PSr9s0/Gemini-Generated-Image-a5jkuba5jkuba5jk.png' },
+            { name: 'Refrigerante Goob 1L', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/Fkj306JQ/Gemini-Generated-Image-78eqyh78eqyh78eq.png' },
+            { name: 'Refrigerante Goob 230ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/1JrZ17L7/Gemini-Generated-Image-fn1togfn1togfn1t.png' },
+            { name: 'Energético Ener Up 2L', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/8LCtQwjT/ISM-SITE-BANNER-730-X400-ENERUP-2-L-640x400.png' },
+            { name: 'Energético Ener Up 250ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/bjbfp4Xh/ISM-SITE-BANNER-730-X400-ENERUP-250-ML-640x400.png' },
+            { name: 'Guaraná + Açaí Guaran Up de Copo 290ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/3mSgbrqw/ISM-SITE-BANNER-730-X400-GUARANUP-COPO-640x400.png' },
+            { name: 'Guaraná + Açaí Guaran Up 200ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/Y7Rm31tR/ISM-SITE-BANNER-730-X400-GUARANUP-GARRAFA-640x400.png' },
+            { name: 'Água Mineral Lôa 1,5L Sem gás', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/tpGcGm1d/Gemini-Generated-Image-nrloexnrloexnrlo.png' },
+            { name: 'Água Mineral Lôa 500ML Sem Gás', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/JFzqc2QF/sem-gas-1.png' },
+            { name: 'Água Mineral Lôa 500ML Com gás', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/j9cdnpg7/com-gas-1.png' },
+            { name: 'Suco de Caixinha Yulo Tetra Park 200ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/YT77Lzr2/Gemini-Generated-Image-7p6w207p6w207p6w.png' },
+            { name: 'Suco Yulo 1,5L Frutas Cítricas', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/0jPVR7XP/172760-800-auto.webp' },
+            { name: 'Suco Yulo 400ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/v43Y1zrX/Gemini-Generated-Image-q9sfbwq9sfbwq9sf.png' },
+            { name: 'Suco Yulo 200 ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/CKjz1QC7/Gemini-Generated-Image-d5xxjnd5xxjnd5xx.png' },
+            { name: 'Chá Gelado Drink T 300ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/5XN7dvCf/Gemini-Generated-Image-fr5a3efr5a3efr5a.png' },
+            { name: 'Energético Ener Up lata 269 ML', category: 'Bebidas não alcoólicas', imageUrl: 'https://i.ibb.co/QFn2KWcD/Gemini-Generated-Image-vx1r3mvx1r3mvx1r.png' },
+             // Bebidas alcoólicas (mantido igual)
+            { name: 'Cerveja Brussels Lager 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/bjWqn9kf/lager.jpg' },
+            { name: 'Cerveja Brussels Ultra 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/5hq6TQHP/ultra.jpg' },
+            { name: 'Pitú Litro Completa (Sem devolver o Litro)', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/B5fHNL2y/aguardente-pitu-965ml-1a515249-2151-4db6-a2e5-57208f6a1803.jpg' },
+            { name: 'Pitú Devolvendo o Litro', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Dy5gv5B/Gemini-Generated-Image-tfhzumtfhzumtfhz.png' },
+            { name: 'Pitú de Garrafa 600ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/27yx5ZBb/184178-800-450.webp' },
+            { name: 'Pitú Lata 710ML (Latão)', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/bj8NY7pB/18982-cachaca-pitu_lata_710ml-20230914115151.jpg' },
+            { name: 'Pitú Lata 473ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/yvkRyX1/7896607100303.webp' },
+            { name: 'Pitú Lata 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/6JLTr2Dh/9064.jpg' },
+            { name: 'Pitú Lata Sabor Limão 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/9khwPPWq/D-NQ-NP-608552-MLU72642575375_112023-O.webp' },
+            { name: 'Pitú Lata Sabor Limão e Mel 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/nV8g7Hw/272835.webp' },
+            { name: 'Pitú Lata Sabor Caju 350ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/7tZyg3Sb/D-Q-NP-810535-MLA90946626834_082025-O.webp' },
+            { name: 'Pitú Lata Sabor Banana 350 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/SkDWw6Q/D-Q-NP-930648-MLA88192377865_072025-O.webp' },
+            { name: 'Montilla Rum Carta Ouro 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/qLKJDh8g/Gemini-Generated-Image-l8z624l8z624l8z6.png' },
+            { name: 'Montilla Rum Carta Branca 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/6RjJK54c/Gemini-Generated-Image-2la9b62la9b62la9.png' },
+            { name: 'Ice Pitú 275 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/q3yXhQVk/7896607100945.jpg' },
+            { name: 'Cachaça Paratudo 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/mV5Jcph9/15126653667_1065_amargo_paratudo_900ml.jpg' },
+            { name: 'Cachaça Fogo Paulista 960ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/KjZr6XGT/7433-licor_dubar_fogo_paulista_960_ml.jpg' },
+            { name: 'Cachaça 51 de 965 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/7ttFj1hP/156261-1.jpg' },
+            { name: 'Cachaça Asa Branca 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/vC07C1rt/D-Q-NP-682768-MLA85665355420_062025-O.webp' },
+            { name: 'Cachaça Caninha Vida Nova 480 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Kp08m4QT/aguardente-caninha_vida_nova_ac63c08b-c80d-4c0a-8be0-b5b19dad39c2.png' },
+            { name: 'Cachaça Asa Branca Jequitibá 980 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/kgDYW4cv/baf0f19e27.webp' },
+            { name: 'Cachaça Seleta 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/zhKBWs5w/51-SGWL1j-Jr-L.jpg' },
+            { name: 'Cachaça Velho Barreiro 910 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Qj1Sg9ws/10987-cachaca_velho_barreiro_910ml_1un_20250901154933.png' },
+            { name: 'Cachaça 1883 De Alambique Ouro 980 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Q36TxwbW/cachaca_alambique_1883_980ml_gfa_99875.png' },
+            { name: 'Vodka Slova Tradicional 965 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/LdW9kdjf/screenshot_20221231-183752_chrome_vsdier.webp' },
+            { name: 'Vodka Slova Sabor Limão 965 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/TB6H6NmP/fc9cbab4f130508a890ea657a1453766.webp' },
+            { name: 'Vodka Slova Blueberry 965 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/ymQh9TZw/28324-1.jpg' },
+            { name: 'Vodka Slova Sabor Frutas Vermelhas 965 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/ynkZY2cR/defd9147738d8a45d78d499c84264131.webp' },
+            { name: 'Vodka Newsnoff 960 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Q39y4ztD/Gemini-Generated-Image-usmcjjusmcjjusmc.png' },
+            { name: 'Vodka Newsnoff Sabor Limão 960 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/27bddhyp/Gemini-Generated-Image-chu2xwchu2xwchu2.png' },
+            { name: 'Vodka Newsnoff Sabor Frutas Vermelhas 960 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/tkv0q5N/Gemini-Generated-Image-quoocbquoocbquoo.png' },
+            { name: 'Vodka Natasha 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/7xs3PBVR/258980-1.webp' },
+            { name: 'Vodka Smirnoff 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/YBrqssM4/961397-1.jpg' },
+            { name: 'Vodka Absolut 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/C5x3b2Bz/absolut_vodka_1_l_438982463_1_20250317122742.webp' },
+            { name: 'Whisky Black Stone 1L (Com Copo)', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/0pnMv0XZ/268299.webp' },
+            { name: 'Whisky Old Par 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/mrmhjzXV/51zz0lz-Ntu-L.jpg' },
+            { name: 'Whisky Jack Daniel’s 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/gbHzSbww/jack_daniels_1l.png' },
+            { name: 'Whisky Jack Daniel’s Maçã Verde 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/1fMx5CZs/71-Rr-Bw-GGc-IL.jpg' },
+            { name: 'Whisky Jack Daniel’s Mel 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/FkJMrzDg/715ipo-ORi5-L.jpg' },
+            { name: 'Whisky Red Label 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Tq1SbBdG/bo839.png' },
+            { name: 'Whisky Black Label 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Psf9MdzP/001.webp' },
+            { name: 'Whisky Cutty Sark 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/1YdKJMcH/6420_whisky_cutty_sark_1l.jpg' },
+            { name: 'Whisky Teachers 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/8Dj7hHBB/2015073908.jpg' },
+            { name: 'Whisky Passport Scotch 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Tx12qb5m/51-UYCr-Fpn5-S_UF1000,1000_QL80.jpg' },
+            { name: 'Whisky White Horse 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/r2B695NC/45018-1.jpg' },
+            { name: 'Whisky Chanceler 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/VpBDSjHw/259762.webp' },
+            { name: 'Whisky Ballantine’s 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/6JZDgC3D/51fuir-Dim-QL.jpg' },
+            { name: 'Whisky Black & White 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/s9TWfDm5/whisky-black-eamp-white_1000ml_969_1_0c0e90277412f5185c8f95be9e6d8922.webp' },
+            { name: 'Gin Dubar London Dry 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/DfN02sSM/a052e9bcab.webp' },
+            { name: 'Gin Tanqueray London Dry 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/N2qkXvbF/51gp-RGVy6-SL_UF1000,1000_QL80.jpg' },
+            { name: 'Gin Beefeater London Dry 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/gFc44xhq/Beefeater_London_Dry_Gin_aspect_ratio_320_540.jpg' },
+            { name: 'Genebra Dubar Zora 960 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/G4bPGLdH/51r-Oz-Lf4s-ML.jpg' },
+            { name: 'Geneva Steinhaeger Becosa 980 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/C5m7hWwZ/51g-AZ7od-ZSL_UF1000,1000_QL80.jpg' },
+            { name: 'Ice Syn Lemon Ice 300ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/WpjLmXH7/Syn_Ice_300_PET_Limao_25a1a95d.png' },
+            { name: 'Ice Glow 275 ML (Garrafa de Vidro)', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/rC0thLK/Gemini-Generated-Image-bvkaw1bvkaw1bvka.png' },
+            { name: 'Glow Ice 269ML (Lata)', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/YBgGsXmQ/glow_lata_269ml.png' },
+            { name: 'Vinho Quinta do Morgado Suave 750ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/j0dGyjr/quinta-do-morgado-tinto-suave.jpg' },
+            { name: 'Vinho Cantina da Serra 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/DfmgKCmx/vinho-coquetel-cantina_da_serra_tinto_suave_embalagem_12x15_lt_preco_unitario_r9_3enygexapi.webp' },
+            { name: 'Vinho Pérgula Tinto Suave 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/pjykdnSp/Vinho_Brasileiro_Pergola_Tinto_Suave_1l.png' },
+            { name: 'Aperitivo Campari 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/b0T3DPR/10375_aperitivo_bitter_campari_998ml_1un_20250901154933.png' },
+            { name: 'Aperitivo Jurubeba Leão do Norte 600 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Cs9Z7Zzs/aperitivo-jurubeba_leao_do_norte_600ml_1959_1_6a7a79b098d66071f5d0ad6a07cacf14.webp' },
+            { name: 'Conhaque Presidente 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Z6437SW4/9375_conhaque_presidente_900ml.jpg' },
+            { name: 'Conhaque Dramontt 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/svhMx5CX/images-1.jpg' },
+            { name: 'Conhaque Dreher 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/ksGwKgS8/20240629110719_66801517ad651.webp' },
+            { name: 'Conhaque Domus Gengibre 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/Kxqb3Pz1/6004_conhaque_domus_900ml_20231129151710.jpg' },
+            { name: 'Conhaque Domecq Coquetel Composto 1 L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/5h7zC8sB/51-Ir-C0-JN5a-L.jpg' },
+            { name: 'Licor Menta São Paulo 960ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/gFB5d5wS/Gemini-Generated-Image-nts7ifnts7ifnts7.png' },
+            { name: 'Tequila José Cuevo 1L', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/VcRZYDdH/07127902e5b6462da804f886248fe397.webp' },
+            { name: 'Catuaba Vida Nova 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/j91j5KRh/01-325152-01.webp' },
+            { name: 'Alcatrão São João da Barra 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/PvjZRQcT/134.jpg' },
+            { name: 'Bebida alcoólica Gengibre Vida Nova Verde 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/0V6X2rpH/Gemini-Generated-Image-jd60eajd60eajd60.png' },
+            { name: 'Canelinha da Rocha 900ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/4nyHHwMy/3708eb250af525b1f523081bc7116cd6.webp' },
+            { name: 'Gengibre Artesanal Pérola da Chapada 900 ML', category: 'Bebidas alcoólicas', imageUrl: 'https://i.ibb.co/4n7Lp63W/IMG-0661.jpg' },
+             // Bomboneire (mantido igual)
+            { name: 'Bala Santa Fé Canela 600G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Ds3YDxj/128.jpg' },
+            { name: 'Bala Icekiss Sortida 500G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/7dVMMzqJ/bala-dura_icekiss_sortida_500g_16675_1_3b5416d1fada308118535e1796dcd3e3.webp' },
+            { name: 'Bala Butter Toffees 500G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/27H2JQtk/Gemini-Generated-Image-iubivjiubivjiubi.png' },
+            { name: 'Bala Santa Fé Mastigável Yogurt Morango 500G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/kVsQzs9C/e91aa7f279427e2a82d0f7b6333967b1.webp' },
+            { name: 'Bala Santa Fé Mastigável Sortida Frutas 500G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/q3CLvQPP/df00043f0bf6a689281a7536ebbdd5d6.webp' },
+            { name: 'Balinhas Coração Morango Florestal 500G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Y7vHcDhm/balinha_do_coracao_morango_500g_florestal_665a12f845aa1.jpg' },
+            { name: 'Bala Mel e Gengibre', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/0pxJjsFQ/mel_gengibre.png' },
+            { name: 'Bala de Hortelã Recheada', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Kx3ZT2g7/hortela_recheada.png' },
+            { name: 'Drops Halls', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/9kh4dc9C/sg_11134201_7qvea_li0fr8iza4l467.jpg' },
+            { name: 'Drops Icekiss Sortido', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/wZRb6Kbs/2649499711d66e88d87.webp' },
+            { name: 'Bala de Caramelo', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/prvBSkc8/Gemini-Generated-Image-dxs3fidxs3fidxs3.png' },
+            { name: 'Bala Coffee King', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/d4XzJ5bt/046804.jpg' },
+            { name: 'Bala Azedinha', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/dsDMnrSb/azedinha.png' },
+            { name: 'Bala Yogurte Sortido', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/BVJnQbnL/01-207224-01.webp' },
+            { name: 'Drops Freegells', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/FkqpRLsb/Gemini-Generated-Image-8mfqux8mfqux8mfq.png' },
+            { name: 'Chicle Big Big', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/mrzDSTn7/Gemini-Generated-Image-ev8fagev8fagev8f.png' },
+            { name: 'Chiclete Trident', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/5hYWG1LZ/Gemini-Generated-Image-he1fa1he1fa1he1f.png' },
+            { name: 'Chiclete Cliss', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/rR8JmKvK/sg_11134201_22090_y0q3j9jdk3hv45.jpg' },
+            { name: 'Chiclete Danclets Tutti Frutti', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/RpG5F6ns/D-Q-NP-870599-MLB74118344610_012024-O.webp' },
+            { name: 'Chiclete Blong', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/fGt4CMcz/Gemini-Generated-Image-rvylr0rvylr0rvyl.png' },
+            { name: 'Goma Tubo Gurt', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/qYszD42s/bala_de_goma_jelly_rolls_tubo_gurt_c_30un_930g_kuky_115_1_452e40c15132154dbdf0a57259ab0d92.webp' },
+            { name: 'Goma Tubo Frutas Sortidas', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/ZR4kpNyq/GOMA_TUBO_KUKY_FRUTAS_C30_3.webp' },
+            { name: 'Pirulito Megalito Pinta Língua', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/T9m5zn7/1617230123c7i5abc2cd.png' },
+            { name: 'Pirulito Big Pop Yogurt Rech Mastigável 500 G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/s9s8xmQV/Gemini-Generated-Image-l33v00l33v00l33v.png' },
+            { name: 'Pirulito Big Pop Frutas Recheado Mastigável 500 G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/L3GybXc/pirulito_big_pop_frutas_sortidas_c_rech_mastigavel_500g_17525_1_b3db72729bb08998eab24f4c6a2c86c3.webp' },
+            { name: 'Pirulito Megalito Sortido Berbau 1 KG', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/gLvRsns6/Gemini-Generated-Image-9g89929g89929g89.png' },
+            { name: 'Pirulito Pop Mix', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/qbdGxtH/cherry_pop_mix_700g_2997_1_20231017103744.webp' },
+            { name: 'Pirulito Yogo Pop Sortido', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/2741CTGf/01-289014-01.webp' },
+            { name: 'Biscoito Recheado Fofinho', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/rRxPnQBn/2a92fd1f98d81487f3fa0e0bae49d670.webp' },
+            { name: 'Mini Bolinho Capri 35G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/p65nxWpM/Gemini-Generated-Image-n90qfan90qfan90q.png' },
+            { name: 'Confeito Mamadeira', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/N21pwW9c/11298448720b35e848f.webp' },
+            { name: 'Confeito Skatinho', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/N6NBmVPN/D-NQ-NP-850364-MLB80101297726_102024-O.webp' },
+            { name: 'Confeito Catavento', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/bM04dGkK/Gemini-Generated-Image-fnnrvqfnnrvqfnnr.png' },
+            { name: 'Confeito Carinhas', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/jPhr1v3x/br_11134201_22120_0818ghugnflv0f.jpg' },
+            { name: 'Confeito Chuquinhas', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/60xypgv7/Gemini-Generated-Image-hid0yhhid0yhhid0.png' },
+            { name: 'Chup Chup Doce de Leite 1,5 KG', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/0p3LFXzj/162295_800_auto.png' },
+            { name: 'Chup Chup Doce de Leite 750G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/QFwFMr02/4ad11e52af9ae7c25443b6d77a6803af_yzi2zbl6y2.webp' },
+            { name: 'Geladão Ice Pop Sortido', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/8grJPpPm/265458515e611b96425.webp' },
+            { name: 'Geladinho Ice Pop Sortido', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/dw6x100j/2654583960da327215d.webp' },
+            { name: 'Moedas de Chocolate Ao Leite 500 G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/d0hKGH0N/moedas_de_chocolate_ao_leite_pacote_premium_500g_61_1_8d76fe3401a0052817825d80e9b8ea24.webp' },
+            { name: 'Chocolate Puríssimo', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/6cwtwx2Y/dfe03fd9-cb38-4cd9-b839-d597f251e29f_4380_000854_2966c599cff5b765fd17410129207602-1024-1024.jpg' },
+            { name: 'Doce Balsamo Pacote com 50 unidades', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/fzwM1rPm/Gemini-Generated-Image-klafw5klafw5klaf.png' },
+            { name: 'Pé de Moleque Pacote com 50 unidades', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/prL6WgT8/Gemini-Generated-Image-9cxna59cxna59cxn.png' },
+            { name: 'Pé de Moleque Pote com 50', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/qYCqXGvK/crocante-02.jpg' },
+            { name: 'Quebra Queixo', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Hp2G15Kr/Quebra_Queixo_340g_2_243x340.jpg' },
+            { name: 'Cocada Branca', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/n2ZGRtv/Gemini-Generated-Image-rnoqd4rnoqd4rnoq.png' },
+            { name: 'Cocada Morena', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/1G6SJz1H/Gemini-Generated-Image-vy51tvvy51tvvy51.png' },
+            { name: 'Goiabada de Pacote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/TBBjSzRq/Goiabada_800g_2_454x248.jpg' },
+            { name: 'Goiabada de Pote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/gZZZ41Bv/Gemini-Generated-Image-ao0rmeao0rmeao0r.png' },
+            { name: 'Bananada de Pacote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Myx8xhNy/Bananada_Grande_lisa_1500g_2_454x272.jpg' },
+            { name: 'Bananada de Pote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/kWVxxjY/bananada-340x340.png' },
+            { name: 'Geleia de pote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/WNhT3pTn/geleia1-340x340.png' },
+            { name: 'Geleia Pacote', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/DffFwY3K/Geleia_200g_454x148.png' },
+            { name: 'Nego Bom de Goiaba', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/VWtbM5wR/Nego_Bom_de_Goiaba_800g_224x340.jpg' },
+            { name: 'Nego Bom de Banana', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/dsyj0NB9/Nego_Bom_Banana_800g_1_230x340.jpg' },
+            { name: 'Salgadinho Goxtoso 28G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/7J7yjqvV/Goxtoso_Assado.png' },
+            { name: 'Salgadinho Pimentinha Goxtoso 40G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/4RKPy3cS/Goxtoso_Xeeks.png' },
+            { name: 'Pipoca Doce Goxtoso 40G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/5X1zGGV0/Goxtoso_pipoca.png' },
+            { name: 'Salgadinho Batata Plus 40G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/5XMBKbTJ/Gemini-Generated-Image-jxmtyjxmtyjxmtyj.png' },
+            { name: 'Salgadinho Agitos 85G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/4gtTH7sz/Gemini-Generated-Image-2p7o242p7o242p7o.png' },
+            { name: 'Salgadinho Pimentinha Sortida Agitos 40G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Nf9N43z/Gemini-Generated-Image-6z7eu06z7eu06z7e.png' },
+            { name: 'Salgadinhos Snacks Amendupã', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Myt3D7dB/Captura_de_tela_2025-10-22_145716.png' },
+            { name: 'Salgadinho Agitos 25G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/xt3dTbRK/Gemini-Generated-Image-hg0fm8hg0fm8hg0f-1.png' },
+            { name: 'Amendoim Japonês Amendupã', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/B5SCK4rF/Captura_de_tela_2025-10-22_145649.png' },
+            { name: 'Amendoim Japonês 1KG', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/7tFByG95/mendozitos_1kg.jpg' },
+            { name: 'Mendozitos Japonês 30G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/zTgLhBc0/mendozitos_cartela.jpg' },
+            { name: 'Amendoim Crocanty Pimenta Mexicana 30 G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/V0s0w6Q7/crocanty_cartela_pimenta.jpg' },
+            { name: 'Amendoim Crocante Bacon 30G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/n8N8M0L7/crocanty_cartela_bacon.jpg' },
+            { name: 'Amendoim Cebola e Salsa 30G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/tw489vjw/crocanty_cartela_cebola.jpg' },
+            { name: 'Torresmo Pé de Serra', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/Hp9txykH/l-9aee4631cfa14377af45cd51cdd3a79f.png' },
+            { name: 'Pururuca Pé de Serra', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/rGyN4K0H/Gemini-Generated-Image-ijfasqijfasqijfa.png' },
+            { name: 'Leite em Pó Gostolac 200G', category: 'Bomboneire', imageUrl: 'https://i.ibb.co/LDQhfcH6/gostolac_thumb.png' },
+             // Cigarro (mantido igual)
+            { name: 'Fumo Coringa', category: 'Cigarro', imageUrl: 'https://i.ibb.co/jPfJDgsW/Gemini-Generated-Image-i5xfgwi5xfgwi5xf.png' },
+            { name: 'Papel para Fumo Bom de Fogo', category: 'Cigarro', imageUrl: 'https://i.ibb.co/4wkNb866/Gemini-Generated-Image-fke8b7fke8b7fke8.png' },
+            { name: 'Cigarro de Palha Palheiro', category: 'Cigarro', imageUrl: 'https://i.ibb.co/wrWp8WZy/Gemini-Generated-Image-dpeppzdpeppzdpep.png' },
+            { name: 'Seda para Fumo Zomo', category: 'Cigarro', imageUrl: 'https://i.ibb.co/WpNNj4qQ/natural_ybudhybhlg.webp' },
+            { name: 'Fumo Meliá', category: 'Cigarro', imageUrl: 'https://i.ibb.co/qHfkRKM/Gemini-Generated-Image-gqj6uegqj6uegqj6.png' },
+             // Outros (mantido igual)
+            { name: 'Copo Americano 240 ML', category: 'Outros', imageUrl: 'https://i.ibb.co/nNm9sV1y/IMG-0658.jpg' },
+        ];
+
+        const categoriesOrder = ['Bebidas não alcoólicas', 'Bebidas alcoólicas', 'Bomboneire', 'Cigarro', 'Outros'];
+
+        // --- Função para Renderizar Produtos ---
+        function renderCatalog() {
+            const container = document.getElementById('productGridContainer');
+            container.innerHTML = ''; // Limpa o conteúdo anterior
+
+             // Adiciona o título principal
+            const mainTitle = document.createElement('h1');
+            // MODIFICADO: Removido "para Impressão" do texto
+            mainTitle.textContent = 'Catálogo de Produtos - IgorValen Distribuidora';
+            // Adiciona classes para estilo (mantido)
+            mainTitle.className = 'text-3xl lg:text-4xl font-bold text-center mb-8 lg:mb-10 text-green-700';
+            container.appendChild(mainTitle); // Adiciona ao início do container
+
+            categoriesOrder.forEach(categoryName => {
+                const productsInCategory = products.filter(p => p.category === categoryName);
+
+                if (productsInCategory.length > 0) {
+                    const title = document.createElement('h2');
+                    title.className = 'category-title';
+                    title.textContent = categoryName;
+                    container.appendChild(title);
+
+                    const categoryGrid = document.createElement('div');
+                    // Grid com 5 colunas em telas grandes, ajustando para menos em telas menores e 6 na impressão
+                    categoryGrid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 print:grid-cols-6 print:gap-3 print:mb-5 mb-10'; // Ajustes print
+                    
+                    productsInCategory.forEach(product => {
+                        const item = document.createElement('div');
+                        item.className = 'product-item';
+
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = 'product-image-container';
+
+                        const img = document.createElement('img');
+                        img.src = product.imageUrl;
+                        img.alt = product.name;
+                        img.className = 'product-image';
+                        img.loading = 'lazy';
+                        img.onerror = function() {
+                          this.onerror=null;
+                           this.src='https://placehold.co/100x100/cccccc/ffffff?text=X'; // Placeholder menor
+                           this.alt='Imagem indisponível';
+                           console.warn(`Erro ao carregar imagem: ${product.imageUrl}`);
+                        };
+                        imgContainer.appendChild(img);
+
+                        const name = document.createElement('div');
+                        name.className = 'product-name';
+                        name.textContent = product.name;
+
+                        item.appendChild(imgContainer);
+                        item.appendChild(name);
+                        categoryGrid.appendChild(item);
+                    });
+                     container.appendChild(categoryGrid);
+                }
+            });
+        }
+
+        // --- Renderiza o catálogo quando a página carrega ---
+        document.addEventListener('DOMContentLoaded', renderCatalog);
+    </script>
+
+</body>
+</html>
+
